@@ -1,0 +1,60 @@
+/* kendra: quick settings. Colors come from Vyom's style.css (@mauve...). */
+.plugin-kendra .qs { padding: 16px 16px 0 16px; }
+.qs-header { margin-bottom: 14px; }
+.qs-avatar {
+  min-width: 38px; min-height: 38px; border-radius: 19px;
+  background-image: linear-gradient(135deg, #cba6f7, #f5e0dc);
+  color: @crust; font-weight: 800; font-size: 16px;
+}
+.qs-hello { font-weight: 700; font-size: 14px; }
+.qs-meta { color: @overlay1; font-size: 12px; }
+button.qs-round {
+  min-width: 34px; min-height: 34px; padding: 0; border-radius: 17px;
+  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.08);
+  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @subtext0; box-shadow: none;
+}
+button.qs-round:hover, button.qs-round:focus-visible { background: alpha(white, 0.12); color: @text; }
+button.qs-round.power { color: @red; }
+
+button.qs-tile {
+  padding: 10px 12px; border-radius: 14px; min-height: 40px;
+  background: alpha(white, 0.05); border: 1px solid alpha(white, 0.07);
+  box-shadow: none; color: @text;
+}
+button.qs-tile:hover { background: alpha(white, 0.09); }
+button.qs-tile:focus-visible { outline: 2px solid alpha(#cba6f7, 0.8); outline-offset: 1px; }
+.qs-icon { font-family: "JetBrainsMono Nerd Font"; font-size: 18px; color: @overlay1; min-width: 22px; }
+.qs-title { font-weight: 600; font-size: 12.5px; }
+.qs-sub { color: @overlay1; font-size: 11.5px; }
+.qs-more { font-family: "JetBrainsMono Nerd Font"; color: @overlay0; font-size: 14px; }
+button.qs-tile.on .qs-sub { color: @subtext0; }
+button.qs-tile.on.q-sky    { background: alpha(@sky, 0.16);    border-color: alpha(@sky, 0.40); }
+button.qs-tile.on.q-blue   { background: alpha(@blue, 0.16);   border-color: alpha(@blue, 0.40); }
+button.qs-tile.on.q-teal   { background: alpha(@teal, 0.16);   border-color: alpha(@teal, 0.40); }
+button.qs-tile.on.q-red    { background: alpha(@red, 0.16);    border-color: alpha(@red, 0.40); }
+button.qs-tile.on.q-peach  { background: alpha(@peach, 0.16);  border-color: alpha(@peach, 0.40); }
+button.qs-tile.on.q-mauve  { background: alpha(@mauve, 0.16);  border-color: alpha(@mauve, 0.40); }
+button.qs-tile.on.q-yellow { background: alpha(@yellow, 0.16); border-color: alpha(@yellow, 0.40); }
+button.qs-tile.on.q-green  { background: alpha(@green, 0.16);  border-color: alpha(@green, 0.40); }
+button.qs-tile.on.q-sky .qs-icon    { color: @sky; }
+button.qs-tile.on.q-blue .qs-icon   { color: @blue; }
+button.qs-tile.on.q-teal .qs-icon   { color: @teal; }
+button.qs-tile.on.q-red .qs-icon    { color: @red; }
+button.qs-tile.on.q-peach .qs-icon  { color: @peach; }
+button.qs-tile.on.q-mauve .qs-icon  { color: @mauve; }
+button.qs-tile.on.q-yellow .qs-icon { color: @yellow; }
+button.qs-tile.on.q-green .qs-icon  { color: @green; }
+
+.qs-sliders { margin-top: 14px; }
+button.qs-slider-icon {
+  min-width: 30px; min-height: 30px; padding: 0; border-radius: 15px;
+  background: none; border: none; box-shadow: none;
+  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @subtext0;
+}
+button.qs-slider-icon:hover { background: alpha(white, 0.08); }
+.qs-value { color: @subtext0; font-family: "JetBrainsMono Nerd Font"; font-size: 12px; }
+.qs-slider.brightness scale highlight { background: @yellow; }
+.qs-foot {
+  margin: 14px -16px 0 -16px; padding: 9px 16px;
+  border-top: 1px solid alpha(white, 0.06); background: alpha(#11111b, 0.25); border-radius: 0 0 20px 20px;
+}
