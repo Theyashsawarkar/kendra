@@ -1,0 +1,8 @@
+# The project website (docs/, GitHub Pages): built by scripts/build-site.py
+name = "kendra"
+sanskrit = "केन्द्र"
+meaning = "centre"
+tagline = "Quick settings: Wi-Fi, Bluetooth, hotspot, DND, caffeine, theme, wallpaper, power profile, volume, brightness, battery, lock, power."
+color = "mauve"
+kind = "a Vyom tool"
+logo = "assets/logo.svg"
