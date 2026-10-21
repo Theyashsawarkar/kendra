@@ -1,7 +1,7 @@
 name = "kendra"
 title = "Quick settings"
 description = "Quick settings: Wi-Fi, Bluetooth, hotspot, DND, caffeine, theme, wallpaper, power profile, volume, brightness, battery, lock, power."
-version = "0.1.0"
+version = "0.1.1"
 vyom = "0.2.4"
 icon = "󰒓"
 color = "mauve"
