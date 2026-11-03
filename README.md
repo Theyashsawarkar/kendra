@@ -6,6 +6,15 @@
   </picture>
 </p>
 
+<!-- identity -->
+<p align="center">
+  <b>ईश्वरः सर्वभूतानां हृद्देशेऽर्जुन तिष्ठति ।<br>
+  भ्रामयन्सर्वभूतानि यन्त्रारूढानि मायया ॥</b><br>
+  <i>The Lord dwells in the heart of all beings, turning them by his māyā as if they were mounted on a machine.</i><br>
+  <sub>Bhagavad Gītā 18.61</sub>
+</p>
+<!-- /identity -->
+
 <p align="center">
   <b>Quick settings: Wi-Fi, Bluetooth, hotspot, DND, caffeine, theme, wallpaper, power profile, volume, brightness, battery, lock, power.</b><br>
   Quick settings. A tool for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>, keyboard-driven panels for Wayland.

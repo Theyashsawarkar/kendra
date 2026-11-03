@@ -6,3 +6,6 @@ tagline = "Quick settings: Wi-Fi, Bluetooth, hotspot, DND, caffeine, theme, wall
 color = "mauve"
 kind = "a Vyom tool"
 logo = "assets/logo.svg"
+shloka = "ईश्वरः सर्वभूतानां हृद्देशेऽर्जुन तिष्ठति ।\nभ्रामयन्सर्वभूतानि यन्त्रारूढानि मायया ॥"
+shloka_meaning = "The Lord dwells in the heart of all beings, turning them by his māyā as if they were mounted on a machine."
+shloka_source = "Bhagavad Gītā 18.61"
