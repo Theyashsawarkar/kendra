@@ -2,8 +2,16 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.2.0 -- 2026-11-07
 
+- **Every tile says On or Off**, and an "on" tile fills its icon in the tile's colour (no more guessing from a faint tint).
+- **Wi‑Fi and Bluetooth name what they're on**, with the headphones' battery ("WH-1000XM5 · 78%"). `Right` opens their details: tarang and setu when they're installed, even without an `open` command.
+- **Sliders show their value** ("80%", "Muted" in red), with a thicker track, a bigger thumb and an icon button; volume names the output device. On a slider, Up / Down move on instead of changing it.
+- New keys: `M` mutes, `L` locks, `P` opens the power menu (vishram inside Vyom when you haven't set `power`).
+- The header shows the battery and uptime as chips (uptime in days once it's long); lock and power are set apart, power in red.
+- A clear accent frame on the tile or slider you're on.
+- The dark theme tile names the GTK theme; a few subtitles start with a capital now.
+- Needs Vyom 0.6.0.
 - Every corner is rounded: the website's callouts.
 - A logo and a shloka at the top of the README and the website: every Vayu tool has them now.
 

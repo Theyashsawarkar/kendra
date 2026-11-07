@@ -47,6 +47,7 @@ class Tile:
     for a tile that only does something (no on/off state)."""
     key = title = icon = ""
     color = "mauve"
+    shows_state = True          # writes "On" / "Off" at its right
 
     def __init__(self, conf=None):
         self.conf = conf or {}
@@ -106,13 +107,13 @@ class Wifi(Tile):
     def status(self):
         on = run("nmcli radio wifi")[1] == "enabled"
         if not on:
-            return False, "off"
+            return False, "Off"
         ssid = next((l.split(":", 1)[1] for l in run("nmcli -t -f ACTIVE,SSID device wifi list --rescan no")[1].splitlines()
                      if l.startswith("yes:")), "")
         if ssid:
             return True, ssid
         wired = "ethernet:connected" in run("nmcli -t -f TYPE,STATE device")[1]
-        return True, "on · ethernet in use" if wired else "on · not connected"
+        return True, "On · ethernet in use" if wired else "On · not connected"
 
     def toggle(self, on):
         run(["nmcli", "radio", "wifi", "on" if on else "off"])
@@ -127,10 +128,16 @@ class Bluetooth(Tile):
     def status(self):
         on = "Powered: yes" in run("bluetoothctl show")[1]
         if not on:
-            return False, "off"
-        names = [l.split(" ", 2)[2] for l in run("bluetoothctl devices Connected")[1].splitlines()
-                 if l.startswith("Device ")]
-        return True, ", ".join(names) if names else "on"
+            return False, "Off"
+        devs = [l.split(" ", 2)[1:] for l in run("bluetoothctl devices Connected")[1].splitlines()
+                if l.startswith("Device ") and l.count(" ") >= 2]
+        if not devs:
+            return True, "On · nothing connected"
+        mac, name = devs[0]
+        # The first device's battery, when it reports one ("Battery Percentage: 0x4e (78)").
+        m = re.search(r"Battery Percentage:.*\((\d+)\)", run(["bluetoothctl", "info", mac])[1])
+        sub = f"{name} · {m.group(1)}%" if m else name
+        return True, sub + (f" +{len(devs) - 1}" if len(devs) > 1 else "")
 
     def toggle(self, on):
         run(["bluetoothctl", "power", "on" if on else "off"], timeout=8)
@@ -159,7 +166,7 @@ class Hotspot(Tile):
         if st["on"]:
             n = st["client_count"]
             return True, f"{st['ssid']} · {n} connected"
-        return False, "off"
+        return False, "Off"
 
     def toggle(self, on):
         run([self.cmd, "on" if on else "off"], timeout=25)
@@ -188,7 +195,10 @@ class DarkTheme(Tile):
 
     def status(self):
         on = "dark" in run(["gsettings", "get", *self.schema])[1]
-        return on, "on" if on else "light"
+        # "catppuccin-mocha-mauve-standard+default" -> "Catppuccin"
+        theme = run(["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"])[1].strip("'")
+        theme = re.split(r"[-_+ ]", theme)[0].capitalize()
+        return on, theme or ("Dark" if on else "Light")
 
     def toggle(self, on):
         run(["gsettings", "set", *self.schema, "prefer-dark" if on else "default"])
@@ -196,8 +206,10 @@ class DarkTheme(Tile):
 
 class PowerProfile(Tile):
     """Cycles power-saver -> balanced -> performance (those this machine
-    offers: performance needs CPU support)."""
+    offers: performance needs CPU support). Its subtitle names the profile,
+    so it writes no On/Off."""
     key, title, icon, color = "power-profile", "Power", "\U000f0241", "green"
+    shows_state = False
 
     def available(self):
         return have("powerprofilesctl") and run("powerprofilesctl get")[0] == 0
@@ -253,6 +265,12 @@ class Volume:
     def toggle_mute(self):
         run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
 
+    def device(self):
+        """The output's name ("WH-1000XM5", "Built-in Audio Analog Stereo")."""
+        out = run("wpctl inspect @DEFAULT_AUDIO_SINK@")[1]
+        m = re.search(r'node\.description = "([^"]+)"', out) or re.search(r'node\.nick = "([^"]+)"', out)
+        return m.group(1) if m else ""
+
 
 class Brightness:
     icon = "\U000f00e0"
@@ -301,8 +319,8 @@ def uptime():
         s = float(open("/proc/uptime").read().split()[0])
     except OSError:
         return ""
-    h, m = int(s // 3600), int(s % 3600 // 60)
-    return f"up {h} h {m} min" if h else f"up {m} min"
+    d, h, m = int(s // 86400), int(s % 86400 // 3600), int(s % 3600 // 60)
+    return f"up {d} d {h} h" if d else f"up {h} h {m} min" if h else f"up {m} min"
 
 
 def user_name():

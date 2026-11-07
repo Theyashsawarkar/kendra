@@ -1,60 +1,87 @@
 /* kendra: quick settings. Colors come from Vyom's style.css (@mauve...). */
 .plugin-kendra .qs { padding: 16px 16px 0 16px; }
-.qs-header { margin-bottom: 14px; }
+.qs-header { margin-bottom: 16px; }
 .qs-avatar {
-  min-width: 38px; min-height: 38px; border-radius: 19px;
-  background-image: linear-gradient(135deg, @accent, @rosewater);
-  color: @crust; font-weight: 800; font-size: 16px;
+  min-width: 40px; min-height: 40px; border-radius: 20px;
+  background: @accent; color: @crust; font-weight: 800; font-size: 17px;
 }
-.qs-hello { font-weight: 700; font-size: 14px; }
-.qs-meta { color: @overlay1; font-size: 12px; }
+.qs-hello { font-weight: 700; font-size: 14.5px; }
+/* Lock and power: round, apart from the tiles; power in red (it leads to the
+   final actions). */
 button.qs-round {
-  min-width: 34px; min-height: 34px; padding: 0; border-radius: 17px;
-  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.08);
-  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @subtext0; box-shadow: none;
+  min-width: 38px; min-height: 38px; padding: 0; border-radius: 19px;
+  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09);
+  font-family: "JetBrainsMono Nerd Font"; font-size: 17px; color: @subtext1; box-shadow: none;
 }
-button.qs-round:hover, button.qs-round:focus-visible { background: alpha(white, 0.12); color: @text; }
-button.qs-round.power { color: @red; }
+button.qs-round.power { margin-left: 4px; color: @red; background: alpha(@red, 0.14); border-color: alpha(@red, 0.35); }
+button.qs-round:hover { background: alpha(white, 0.12); color: @text; }
+button.qs-round.power:hover { background: alpha(@red, 0.24); color: @red; }
+button.qs-round.sel { outline: 2px solid @accent; outline-offset: 2px; }
 
 button.qs-tile {
-  padding: 10px 12px; border-radius: 14px; min-height: 40px;
-  background: alpha(white, 0.05); border: 1px solid alpha(white, 0.07);
-  box-shadow: none; color: @text;
+  padding: 10px 12px; border-radius: 14px; min-height: 42px;
+  background: alpha(white, 0.045); border: 1px solid alpha(white, 0.07);
+  box-shadow: none; color: @text; outline: none;
 }
-button.qs-tile:hover { background: alpha(white, 0.09); }
-button.qs-tile:focus-visible { outline: 2px solid alpha(@accent, 0.8); outline-offset: 1px; }
-.qs-icon { font-family: "JetBrainsMono Nerd Font"; font-size: 18px; color: @overlay1; min-width: 22px; }
-.qs-title { font-weight: 600; font-size: 12.5px; }
-.qs-sub { color: @overlay1; font-size: 11.5px; }
-.qs-more { font-family: "JetBrainsMono Nerd Font"; color: @overlay0; font-size: 14px; }
-button.qs-tile.on .qs-sub { color: @subtext0; }
-button.qs-tile.on.q-sky    { background: alpha(@sky, 0.16);    border-color: alpha(@sky, 0.40); }
-button.qs-tile.on.q-blue   { background: alpha(@blue, 0.16);   border-color: alpha(@blue, 0.40); }
-button.qs-tile.on.q-teal   { background: alpha(@teal, 0.16);   border-color: alpha(@teal, 0.40); }
-button.qs-tile.on.q-red    { background: alpha(@red, 0.16);    border-color: alpha(@red, 0.40); }
-button.qs-tile.on.q-peach  { background: alpha(@peach, 0.16);  border-color: alpha(@peach, 0.40); }
-button.qs-tile.on.q-mauve  { background: alpha(@mauve, 0.16);  border-color: alpha(@mauve, 0.40); }
-button.qs-tile.on.q-yellow { background: alpha(@yellow, 0.16); border-color: alpha(@yellow, 0.40); }
-button.qs-tile.on.q-green  { background: alpha(@green, 0.16);  border-color: alpha(@green, 0.40); }
-button.qs-tile.on.q-sky .qs-icon    { color: @sky; }
-button.qs-tile.on.q-blue .qs-icon   { color: @blue; }
-button.qs-tile.on.q-teal .qs-icon   { color: @teal; }
-button.qs-tile.on.q-red .qs-icon    { color: @red; }
-button.qs-tile.on.q-peach .qs-icon  { color: @peach; }
-button.qs-tile.on.q-mauve .qs-icon  { color: @mauve; }
-button.qs-tile.on.q-yellow .qs-icon { color: @yellow; }
-button.qs-tile.on.q-green .qs-icon  { color: @green; }
+button.qs-tile:hover { background: alpha(white, 0.085); }
+/* Where you are: an accent frame you can't miss. */
+button.qs-tile.sel { outline: 2px solid @accent; outline-offset: 1px; background: alpha(@accent, 0.10); }
+/* The icon in a rounded square: faint when off, filled in the tile's colour when on. */
+.qs-icon {
+  font-family: "JetBrainsMono Nerd Font"; font-size: 18px; color: @overlay2;
+  min-width: 36px; min-height: 36px; border-radius: 11px; background: alpha(white, 0.07);
+}
+.qs-title { font-weight: 650; font-size: 13px; }
+.qs-sub { color: @overlay2; font-size: 12px; }
+.qs-state { font-size: 12px; font-weight: 700; color: @overlay1; }
+.qs-more { font-family: "JetBrainsMono Nerd Font"; color: @overlay1; font-size: 15px; }
+button.qs-tile.on .qs-sub { color: @subtext1; }
+button.qs-tile.on { background: alpha(white, 0.07); border-color: alpha(white, 0.11); }
+button.qs-tile.on.q-sky .qs-icon    { background: @sky; color: @crust; }
+button.qs-tile.on.q-blue .qs-icon   { background: @blue; color: @crust; }
+button.qs-tile.on.q-teal .qs-icon   { background: @teal; color: @crust; }
+button.qs-tile.on.q-red .qs-icon    { background: @red; color: @crust; }
+button.qs-tile.on.q-peach .qs-icon  { background: @peach; color: @crust; }
+button.qs-tile.on.q-mauve .qs-icon  { background: @mauve; color: @crust; }
+button.qs-tile.on.q-yellow .qs-icon { background: @yellow; color: @crust; }
+button.qs-tile.on.q-green .qs-icon  { background: @green; color: @crust; }
+button.qs-tile.on.q-sky .qs-state    { color: @sky; }
+button.qs-tile.on.q-blue .qs-state   { color: @blue; }
+button.qs-tile.on.q-teal .qs-state   { color: @teal; }
+button.qs-tile.on.q-red .qs-state    { color: @red; }
+button.qs-tile.on.q-peach .qs-state  { color: @peach; }
+button.qs-tile.on.q-mauve .qs-state  { color: @mauve; }
+button.qs-tile.on.q-yellow .qs-state { color: @yellow; }
+button.qs-tile.on.q-green .qs-state  { color: @green; }
 
-.qs-sliders { margin-top: 14px; }
+/* Sliders: the name (and output device) over a thick track, a big thumb, the value. */
+.qs-sliders { margin: 18px 2px 4px 2px; }
 button.qs-slider-icon {
-  min-width: 30px; min-height: 30px; padding: 0; border-radius: 15px;
-  background: none; border: none; box-shadow: none;
-  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @subtext0;
+  min-width: 36px; min-height: 36px; padding: 0; border-radius: 11px;
+  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.08); box-shadow: none;
+  font-family: "JetBrainsMono Nerd Font"; font-size: 17px;
 }
-button.qs-slider-icon:hover { background: alpha(white, 0.08); }
-.qs-value { color: @subtext0; font-family: "JetBrainsMono Nerd Font"; font-size: 12px; }
+button.qs-slider-icon:hover { background: alpha(white, 0.12); }
+button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
+.qs-slider.volume button.qs-slider-icon { color: @blue; }
+.qs-slider.brightness button.qs-slider-icon { color: @yellow; }
+.qs-slider.is-muted button.qs-slider-icon { color: @red; }
+.qs-slider-name { color: @overlay2; font-size: 12px; }
+.qs-value { color: @text; font-weight: 700; font-family: "JetBrainsMono Nerd Font"; font-size: 12.5px; }
+.qs-value.muted { color: @red; }
+.qs-slider scale { padding: 8px 0; }
+.qs-slider scale trough { min-height: 10px; border-radius: 5px; background: alpha(white, 0.10); }
+.qs-slider scale highlight { min-height: 10px; min-width: 10px; border-radius: 5px; }
+.qs-slider.volume scale highlight { background: @blue; }
 .qs-slider.brightness scale highlight { background: @yellow; }
+.qs-slider.is-muted scale highlight { background: @overlay0; }
+.qs-slider scale slider { min-width: 22px; min-height: 22px; margin: -6px; border-radius: 11px; background: @text;
+  box-shadow: 0 1px 3px alpha(black, 0.4); }
+.qs-slider scale.sel slider { box-shadow: 0 0 0 3px @accent; }
 .qs-foot {
   margin: 14px -16px 0 -16px; padding: 9px 16px;
   border-top: 1px solid alpha(white, 0.06); background: alpha(@crust, 0.25); border-radius: 0 0 20px 20px;
 }
+/* GTK's default highlight has a -1px margin: with no border it reports a
+   negative size (a warning), so it gets none. */
+.plugin-kendra scale highlight { margin: 0; }
