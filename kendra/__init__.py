@@ -57,25 +57,38 @@ class TileButton(Gtk.Button):
         self.internal = None if tile.open_cmd else DETAILS.get(tile.key)
         if self.internal and self.internal[0] not in getattr(plugin.vyom, "plugins", {}):
             self.internal = None
-        box = Gtk.Box(spacing=11)
+        box = Gtk.Box(spacing=9)
         icon = ui.label(tile.icon, "qs-icon", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         box.append(icon)
         text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, hexpand=True)
         text.append(ui.label(tile.title, "qs-title", xalign=0))
-        self.sub = ui.label("…", "qs-sub", xalign=0, ellipsize=Pango.EllipsizeMode.END, max_width_chars=16)
+        self.sub = ui.label("…", "qs-sub", xalign=0, ellipsize=Pango.EllipsizeMode.END, max_width_chars=13)
         text.append(self.sub)
         box.append(text)
         self.state = ui.label("", "qs-state", valign=Gtk.Align.CENTER)
         self.state.set_visible(False)
         box.append(self.state)
         if self.has_details():
-            box.append(ui.label(CHEVRON, "qs-more", valign=Gtk.Align.CENTER))
+            # The arrow is its own target: a click on it opens the details
+            # (tarang, setu…); a click anywhere else on the tile toggles it.
+            more = ui.label(CHEVRON, "qs-more", valign=Gtk.Align.CENTER)
+            more.set_tooltip_text("Open details")
+            arrow = Gtk.GestureClick(button=1)
+            arrow.connect("pressed", self.arrow_pressed)
+            arrow.connect("released", lambda *_: self.open_details())
+            more.add_controller(arrow)
+            box.append(more)
             click = Gtk.GestureClick(button=3)
             click.connect("pressed", lambda *_: self.open_details())
             self.add_controller(click)
-            self.set_tooltip_text("Click or Enter: toggle · Right click or o: details")
+            self.set_tooltip_text("Click or Enter: toggle · the arrow, right click or o: details")
         self.set_child(box)
         self.connect("clicked", lambda *_: self.activate_tile())
+
+    @staticmethod
+    def arrow_pressed(gesture, *_):
+        # Claim the press so the tile's own click (toggle) never sees it.
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def has_details(self):
         return bool(self.tile.open_cmd or self.internal)
@@ -184,13 +197,13 @@ class SliderRow(Gtk.Box):
 class Plugin(Base):
     name, title, icon, color = "kendra", "Quick settings", "\U000f0493", "mauve"
     layout = "card"
-    width = 420
+    width = 360
     anchor = ("top", "right")
     modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
     start_mode = "normal"
     card_cursor = False         # kendra moves by the grid itself (h / l never jump rows)
     key_groups = vim.GROUPS
-    hints = [Hint("h j k l", "move"), Hint("Enter", "toggle"), Hint("o", "open"), Hint("m", "mute")]
+    hints = [Hint("Enter", "toggle"), Hint("o", "open")]   # the rest: ? lists every key
 
     def __init__(self, vyom, conf):
         super().__init__(vyom, conf)
@@ -226,7 +239,7 @@ class Plugin(Base):
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         root.add_css_class("qs")
         root.append(self._header())
-        grid = Gtk.Grid(column_spacing=10, row_spacing=10, column_homogeneous=True)
+        grid = Gtk.Grid(column_spacing=8, row_spacing=8, column_homogeneous=True)
         grid.add_css_class("qs-tiles")
         for key in self.conf.get("tiles", DEFAULT_TILES):
             tile = system.make_tile(key, self.conf.get("tile", {}).get(key, {}))
@@ -237,7 +250,7 @@ class Plugin(Base):
             grid.attach(b, n % 2, n // 2, 1, 1)
             self.tiles.append(b)
         root.append(grid)
-        sliders = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        sliders = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sliders.add_css_class("qs-sliders")
         for src, css, name in ((system.Volume(), "volume", "Volume"), (system.Brightness(), "brightness", "Brightness")):
             if src.available():

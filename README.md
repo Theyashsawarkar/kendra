@@ -52,7 +52,7 @@ kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): on
 
 - A panel under the bar's top-right corner: your initial, a greeting, **chips for the battery and uptime**, and **lock and power** buttons set apart (power in red; `Space l` and `Space p` do the same).
 - Tiles: **Wi‑Fi, Bluetooth, hotspot, do not disturb, caffeine, dark theme, new wallpaper, power profile**. Every toggle **writes On or Off**, and an "on" tile **fills its icon in the tile's colour**, so you never guess from a faint tint.
-- **Wi‑Fi and Bluetooth name what they're on** ("Home Fiber 5G", "WH-1000XM5 · 78%", with the headphones' battery), and `o` opens their details: [tarang](https://github.com/Theyashsawarkar/tarang) and [setu](https://github.com/Theyashsawarkar/setu) when they're installed, or your own `open` command (`Shift+Enter` and right click too).
+- **Wi‑Fi and Bluetooth name what they're on** ("Home Fiber 5G", "WH-1000XM5 · 78%", with the headphones' battery), and `o` opens their details: [tarang](https://github.com/Theyashsawarkar/tarang) and [setu](https://github.com/Theyashsawarkar/setu) when they're installed, or your own `open` command (`Shift+Enter`, a right click, or a click on the tile's `>` arrow too; a click anywhere else on the tile toggles it).
 - **Volume and brightness** sliders that show their value, a thick track and a big thumb; volume **names the output device**, and its icon button (or `m`) mutes.
 - **Vim keys** (Vyom 0.7): `h` / `j` / `k` / `l` move, `Enter` toggles, `Space` is the leader and never toggles a tile, `?` lists every key.
 - A clear **accent frame** on the tile or slider you're on.

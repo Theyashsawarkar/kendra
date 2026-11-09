@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.3.1 -- 2026-11-09
+
+- **A click on a tile's `>` arrow opens its panel** (Wi-Fi in tarang, Bluetooth in setu, the hotspot); a click anywhere else on the tile still toggles it.
+- **More compact**: about 450 px wide instead of 700 (Vyom 0.7.1's footer no longer widens a card), with smaller tiles, icons, sliders and gaps; the footer shows `Enter toggle` (`?` lists every key).
+
 ## v0.3.0 -- 2026-11-09
 
 - **No more accidental lock.** `l` no longer locks the screen (it moves

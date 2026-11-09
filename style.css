@@ -1,17 +1,17 @@
 /* kendra: quick settings. Colors come from Vyom's style.css (@mauve...). */
-.plugin-kendra .qs { padding: 16px 16px 0 16px; }
-.qs-header { margin-bottom: 16px; }
+.plugin-kendra .qs { padding: 12px 12px 0 12px; }
+.qs-header { margin-bottom: 12px; }
 .qs-avatar {
-  min-width: 40px; min-height: 40px; border-radius: 20px;
-  background: @accent; color: @crust; font-weight: 800; font-size: 17px;
+  min-width: 34px; min-height: 34px; border-radius: 17px;
+  background: @accent; color: @crust; font-weight: 800; font-size: 15px;
 }
-.qs-hello { font-weight: 700; font-size: 14.5px; }
+.qs-hello { font-weight: 700; font-size: 13.5px; }
 /* Lock and power: round, apart from the tiles; power in red (it leads to the
    final actions). */
 button.qs-round {
-  min-width: 38px; min-height: 38px; padding: 0; border-radius: 19px;
+  min-width: 32px; min-height: 32px; padding: 0; border-radius: 16px;
   background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09);
-  font-family: "JetBrainsMono Nerd Font"; font-size: 17px; color: @subtext1; box-shadow: none;
+  font-family: "JetBrainsMono Nerd Font"; font-size: 15px; color: @subtext1; box-shadow: none;
 }
 button.qs-round.power { margin-left: 4px; color: @red; background: alpha(@red, 0.14); border-color: alpha(@red, 0.35); }
 button.qs-round:hover { background: alpha(white, 0.12); color: @text; }
@@ -19,7 +19,7 @@ button.qs-round.power:hover { background: alpha(@red, 0.24); color: @red; }
 button.qs-round.sel { outline: 2px solid @accent; outline-offset: 2px; }
 
 button.qs-tile {
-  padding: 10px 12px; border-radius: 14px; min-height: 42px;
+  padding: 7px 8px 7px 9px; border-radius: 12px; min-height: 36px;
   background: alpha(white, 0.045); border: 1px solid alpha(white, 0.07);
   box-shadow: none; color: @text; outline: none;
 }
@@ -28,13 +28,18 @@ button.qs-tile:hover { background: alpha(white, 0.085); }
 button.qs-tile.sel { outline: 2px solid @accent; outline-offset: 1px; background: alpha(@accent, 0.10); }
 /* The icon in a rounded square: faint when off, filled in the tile's colour when on. */
 .qs-icon {
-  font-family: "JetBrainsMono Nerd Font"; font-size: 18px; color: @overlay2;
-  min-width: 36px; min-height: 36px; border-radius: 11px; background: alpha(white, 0.07);
+  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @overlay2;
+  min-width: 30px; min-height: 30px; border-radius: 9px; background: alpha(white, 0.07);
 }
-.qs-title { font-weight: 650; font-size: 13px; }
-.qs-sub { color: @overlay2; font-size: 12px; }
+.qs-title { font-weight: 650; font-size: 12.5px; }
+.qs-sub { color: @overlay2; font-size: 11.5px; }
 .qs-state { font-size: 12px; font-weight: 700; color: @overlay1; }
-.qs-more { font-family: "JetBrainsMono Nerd Font"; color: @overlay1; font-size: 15px; }
+.qs-more {
+  font-family: "JetBrainsMono Nerd Font"; color: @overlay1; font-size: 15px;
+  min-width: 24px; min-height: 28px; border-radius: 8px;
+}
+/* The arrow is a button of its own (it opens the details): it lights up under the pointer. */
+.qs-more:hover { background: alpha(white, 0.12); color: @text; }
 button.qs-tile.on .qs-sub { color: @subtext1; }
 button.qs-tile.on { background: alpha(white, 0.07); border-color: alpha(white, 0.11); }
 button.qs-tile.on.q-sky .qs-icon    { background: @sky; color: @crust; }
@@ -55,11 +60,11 @@ button.qs-tile.on.q-yellow .qs-state { color: @yellow; }
 button.qs-tile.on.q-green .qs-state  { color: @green; }
 
 /* Sliders: the name (and output device) over a thick track, a big thumb, the value. */
-.qs-sliders { margin: 18px 2px 4px 2px; }
+.qs-sliders { margin: 12px 2px 2px 2px; }
 button.qs-slider-icon {
-  min-width: 36px; min-height: 36px; padding: 0; border-radius: 11px;
+  min-width: 30px; min-height: 30px; padding: 0; border-radius: 9px;
   background: alpha(white, 0.06); border: 1px solid alpha(white, 0.08); box-shadow: none;
-  font-family: "JetBrainsMono Nerd Font"; font-size: 17px;
+  font-family: "JetBrainsMono Nerd Font"; font-size: 15px;
 }
 button.qs-slider-icon:hover { background: alpha(white, 0.12); }
 button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
@@ -69,7 +74,7 @@ button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
 .qs-slider-name { color: @overlay2; font-size: 12px; }
 .qs-value { color: @text; font-weight: 700; font-family: "JetBrainsMono Nerd Font"; font-size: 12.5px; }
 .qs-value.muted { color: @red; }
-.qs-slider scale { padding: 8px 0; }
+.qs-slider scale { padding: 6px 0; }
 .qs-slider scale trough { min-height: 10px; border-radius: 5px; background: alpha(white, 0.10); }
 .qs-slider scale highlight { min-height: 10px; min-width: 10px; border-radius: 5px; }
 .qs-slider.volume scale highlight { background: @blue; }
