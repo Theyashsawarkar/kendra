@@ -2,6 +2,29 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.3.0 -- 2026-11-09
+
+- **No more accidental lock.** `l` no longer locks the screen (it moves
+  right): lock is `Space l`, the power menu `Space p` (`p` still works).
+  `Space` no longer toggles the focused tile; `Enter` does. `L` says where
+  lock went, for one release.
+- **Vim keys** (Vyom 0.7): always NORMAL (there's nothing to type);
+  `h` / `j` / `k` / `l` move through the tile grid by where things are on
+  screen (`l` never jumps rows) and down into the sliders, `gg` / `G` to the
+  first tile / the last slider. On a slider `h` / `l` change it by 5 (a count
+  first: `3l` is +15) and `0` / `$` go to its ends; `Enter` there mutes.
+- **`o` opens a tile's details** (Wi-Fi in tarang, Bluetooth in setu);
+  `Right` no longer does, so it moves right like everywhere else.
+  `Shift+Enter` still opens them.
+- **New keys**: `Space g w` / `g b` / `g h` / `g p` / `g a` open Wi-Fi,
+  Bluetooth, the hotspot, the power menu, the battery; `Space r` reloads every
+  tile.
+- `m` mutes (it was documented as `M`, but Shift never worked); Vyom's footer
+  shows the keys.
+- Keys are data (`kendra/vim.py`); `scripts/keybinds.py` writes the
+  `# keybind:` lines and the README table from it (`--check` in CI).
+- Needs Vyom 0.7.0.
+
 ## v0.2.0 -- 2026-11-07
 
 - **Every tile says On or Off**, and an "on" tile fills its icon in the tile's colour (no more guessing from a faint tint).

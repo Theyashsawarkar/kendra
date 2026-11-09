@@ -7,18 +7,32 @@ refreshes in a background thread, so slow tools never hold it up.
 from gi.repository import GLib, Gtk, Pango
 
 from vyom import Plugin as Base
-from vyom import ui
+from vyom import Hint, ui
 
-from . import system
+from . import system, vim
 
-# keybind: Vyom/quick settings | Arrows | Move between the toggles and sliders
-# keybind: Vyom/quick settings | Enter / Space | Toggle the focused setting
-# keybind: Vyom/quick settings | Right | Open the focused tile's details (Wi-Fi in tarang, Bluetooth in setu)
-# keybind: Vyom/quick settings | Shift+Enter | Open the focused setting's details (e.g. the Wi-Fi list)
-# keybind: Vyom/quick settings | M | Toggle mute on the sound output
-# keybind: Vyom/quick settings | L | Lock the screen
-# keybind: Vyom/quick settings | P | Open the power menu
-# keybind: Vyom/quick settings | Esc | Close quick settings
+# KEYBINDS (generated from kendra/vim.py by scripts/keybinds.py; don't edit by hand)
+# keybind: Vyom/quick settings:normal | h | Move left in the tiles (on a slider: lower it by 5)
+# keybind: Vyom/quick settings:normal | l | Move right in the tiles (on a slider: raise it by 5)
+# keybind: Vyom/quick settings:normal | j | Move down (from the tiles into the sliders)
+# keybind: Vyom/quick settings:normal | k | Move up
+# keybind: Vyom/quick settings:normal | g g | Jump to the first tile
+# keybind: Vyom/quick settings:normal | G | Jump to the last control (the bottom slider)
+# keybind: Vyom/quick settings:normal | 0 | Set the focused slider to its minimum
+# keybind: Vyom/quick settings:normal | $ | Set the focused slider to its maximum
+# keybind: Vyom/quick settings:normal | Enter | Toggle the focused setting (on a slider: mute it)
+# keybind: Vyom/quick settings:normal | o | Open the focused tile's details (Wi-Fi in tarang, Bluetooth in setu)
+# keybind: Vyom/quick settings:normal | m | Toggle mute on the sound output
+# keybind: Vyom/quick settings leader:normal | Space l | Lock the screen
+# keybind: Vyom/quick settings leader:normal | Space p | Open the power menu
+# keybind: Vyom/quick settings leader:normal | Space g w | Open the Wi-Fi panel (tarang)
+# keybind: Vyom/quick settings leader:normal | Space g b | Open the Bluetooth panel (setu)
+# keybind: Vyom/quick settings leader:normal | Space g h | Open the hotspot (tarang's Hotspot tab)
+# keybind: Vyom/quick settings leader:normal | Space g p | Open the power menu (vishram)
+# keybind: Vyom/quick settings leader:normal | Space g a | Open the battery panel (urja)
+# keybind: Vyom/quick settings leader:normal | Space r | Reload every tile and slider
+# keybind: Vyom/quick settings | Shift+Enter | Open the focused setting's details (same as o)
+# END KEYBINDS
 
 DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "dnd", "caffeine", "theme", "wallpaper", "power-profile"]
 # A tile's details in another Vyom tool, when it's installed and the tile has no `open` command.
@@ -59,7 +73,7 @@ class TileButton(Gtk.Button):
             click = Gtk.GestureClick(button=3)
             click.connect("pressed", lambda *_: self.open_details())
             self.add_controller(click)
-            self.set_tooltip_text("Click: toggle · Right click or →: details")
+            self.set_tooltip_text("Click or Enter: toggle · Right click or o: details")
         self.set_child(box)
         self.connect("clicked", lambda *_: self.activate_tile())
 
@@ -111,7 +125,7 @@ class SliderRow(Gtk.Box):
         self.icon.add_css_class("qs-slider-icon")
         if hasattr(source, "toggle_mute"):
             self.icon.connect("clicked", lambda *_: self.toggle_mute())
-            self.icon.set_tooltip_text("Mute / unmute (M)")
+            self.icon.set_tooltip_text("Mute / unmute (m)")
         else:
             self.icon.set_can_focus(False)
             self.icon.set_can_target(False)
@@ -172,6 +186,11 @@ class Plugin(Base):
     layout = "card"
     width = 420
     anchor = ("top", "right")
+    modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
+    start_mode = "normal"
+    card_cursor = False         # kendra moves by the grid itself (h / l never jump rows)
+    key_groups = vim.GROUPS
+    hints = [Hint("h j k l", "move"), Hint("Enter", "toggle"), Hint("o", "open"), Hint("m", "mute")]
 
     def __init__(self, vyom, conf):
         super().__init__(vyom, conf)
@@ -226,20 +245,7 @@ class Plugin(Base):
                 sliders.append(row)
                 self.sliders.append(row)
         root.append(sliders)
-        foot = Gtk.Box(spacing=14)
-        foot.add_css_class("qs-foot")
-        hints = [("Arrows", "move"), ("Enter", "toggle")]
-        if any(t.has_details() for t in self.tiles):
-            hints.append(("→", "open"))
-        if any(hasattr(s.source, "toggle_mute") for s in self.sliders):
-            hints.append(("M", "mute"))
-        for keys, what in hints:
-            foot.append(ui.hint_label(keys, what))
-        esc = ui.hint_label("Esc", "close")
-        esc.set_hexpand(True)
-        esc.set_halign(Gtk.Align.END)
-        foot.append(esc)
-        root.append(foot)
+        # The keys are in Vyom's footer (a modal card has one).
         return root
 
     def _header(self):
@@ -252,10 +258,10 @@ class Plugin(Base):
         text.append(self.hello)
         text.append(self.chip_box)
         box.append(text)
-        # Lock and power, set apart from the tiles; power in red. L and P do the same.
+        # Lock and power, set apart from the tiles; power in red. Space l and Space p do the same.
         self.session, self.session_buttons = {}, []
-        for icon, key, tip, css in (("\U000f033e", "lock", "Lock the screen (L)", "lock"),
-                                    ("\U000f0425", "power", "Power menu (P)", "power")):
+        for icon, key, tip, css in (("\U000f033e", "lock", "Lock the screen (Space l)", "lock"),
+                                    ("\U000f0425", "power", "Power menu (Space p)", "power")):
             cmd = self.conf.get(key, "loginctl lock-session" if key == "lock" else None)
             if not cmd or not system.have(cmd):
                 if key == "power" and "vishram" in getattr(self.vyom, "plugins", {}):
@@ -315,26 +321,84 @@ class Plugin(Base):
         if name in ("Return", "KP_Enter") and "shift" in mods:
             t = self.focused_tile()
             return bool(t and t.open_details())
-        if name in ("Up", "Down") and not mods and self.panel is not None \
-                and any(self.panel.get_focus() is s.scale for s in self.sliders):
-            # Up / Down leave a slider (Left / Right change it), like everywhere else here.
-            self.panel.child_focus(Gtk.DirectionType.UP if name == "Up" else Gtk.DirectionType.DOWN)
-            return True
-        if name == "Right" and not mods:
-            t = self.focused_tile()
-            if t is not None and t.has_details():
-                return t.open_details()
-            return False
-        if mods:
-            return False
-        if name in ("m", "M"):
-            for s in self.sliders:
-                if hasattr(s.source, "toggle_mute"):
-                    s.toggle_mute()
-                    return True
-            return False
-        if name in ("l", "L"):
-            return self.session_action("lock")
-        if name in ("p", "P"):
-            return self.session_action("power")
         return False
+
+    # ------------------------------------------------------------ vim keys
+    def keys(self, tab):
+        return vim.keys(tab)
+
+    def focused_slider(self):
+        f = self.panel.get_focus() if self.panel is not None else None
+        return next((s for s in self.sliders if f is s.scale), None)
+
+    def v_move(self, n, way):
+        s = self.focused_slider()
+        if s is not None and way in ("left", "right"):
+            v = s.scale.get_value() + (5 if way == "right" else -5) * n
+            s.scale.set_value(max(0, min(100, v)))
+            return
+        if self.panel is None:
+            return
+        if self.panel.get_focus() is None and self.tiles:
+            self.tiles[0].grab_focus()
+            return
+        d = {"left": Gtk.DirectionType.LEFT, "right": Gtk.DirectionType.RIGHT,
+             "down": Gtk.DirectionType.DOWN, "up": Gtk.DirectionType.UP}[way]
+        for _ in range(n):
+            self.panel.child_focus(d)
+
+    def v_top(self, _n, _a):
+        if self.tiles:
+            self.tiles[0].grab_focus()
+
+    def v_bottom(self, _n, _a):
+        last = ([s.scale for s in self.sliders] or self.tiles)[-1:]
+        if last:
+            last[0].grab_focus()
+
+    def v_ends(self, _n, which):
+        s = self.focused_slider()
+        if s is None:
+            self.set_status("move to a slider first (j)", "bad")
+            return
+        s.scale.set_value(0 if which == "min" else 100)
+
+    def v_enter(self, _n, _a):
+        s = self.focused_slider()
+        if s is not None:
+            if hasattr(s.source, "toggle_mute"):
+                s.toggle_mute()
+            return
+        f = self.panel.get_focus() if self.panel is not None else None
+        if f is not None:
+            f.activate()
+
+    def v_details(self, _n, _a):
+        t = self.focused_tile()
+        if t is None or not t.open_details():
+            self.set_status("this setting has no details", "bad")
+
+    def v_mute(self, _n, _a):
+        for s in self.sliders:
+            if hasattr(s.source, "toggle_mute"):
+                s.toggle_mute()
+                return
+        self.set_status("no sound output to mute", "bad")
+
+    def v_lock(self, _n, _a):
+        if not self.session_action("lock"):
+            self.set_status("no lock command here", "bad")
+
+    def v_power(self, _n, _a):
+        if not self.session_action("power"):
+            self.set_status("no power menu here", "bad")
+
+    def v_goto(self, _n, arg):
+        name, _, sub = arg.partition(":")
+        if name not in getattr(self.vyom, "plugins", {}):
+            self.set_status(f"{name} isn't installed", "bad")
+            return
+        GLib.idle_add(lambda: (self.vyom.open(name, [sub] if sub else []), False)[1])
+
+    def v_refresh(self, _n, _a):
+        self.refresh_all()

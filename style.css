@@ -78,10 +78,6 @@ button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
 .qs-slider scale slider { min-width: 22px; min-height: 22px; margin: -6px; border-radius: 11px; background: @text;
   box-shadow: 0 1px 3px alpha(black, 0.4); }
 .qs-slider scale.sel slider { box-shadow: 0 0 0 3px @accent; }
-.qs-foot {
-  margin: 14px -16px 0 -16px; padding: 9px 16px;
-  border-top: 1px solid alpha(white, 0.06); background: alpha(@crust, 0.25); border-radius: 0 0 20px 20px;
-}
 /* GTK's default highlight has a -1px margin: with no border it reports a
    negative size (a warning), so it gets none. */
 .plugin-kendra scale highlight { margin: 0; }
