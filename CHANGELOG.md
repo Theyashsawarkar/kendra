@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.4.0 -- 2026-11-17
 
 - **The caffeine tile is now Jyoti** (ज्योति, the flame), as across Vayu and ekatva, with its lamp, the diya, as a line drawing. Its key in `tiles` and `[plugin.kendra.tile.…]` is `jyoti`; `caffeine` still works.
 - A tile can have a line drawing for its icon: `icon_svg = "path/to.svg"` (in `currentColor`), painted in the icon's colour like a glyph.
