@@ -4,7 +4,7 @@ Toggles, sliders, battery and session buttons in a panel under the bar's
 top-right corner. Opens with the last known state, then every tile
 refreshes in a background thread, so slow tools never hold it up.
 """
-from gi.repository import GLib, Gtk, Pango
+from gi.repository import Gdk, GLib, Gtk, Pango
 
 from vyom import Plugin as Base
 from vyom import Hint, ui
@@ -34,7 +34,7 @@ from . import system, vim
 # keybind: Vyom/quick settings | Shift+Enter | Open the focused setting's details (same as o)
 # END KEYBINDS
 
-DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "dnd", "caffeine", "theme", "wallpaper", "power-profile"]
+DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "dnd", "jyoti", "theme", "wallpaper", "power-profile"]
 # A tile's details in another Vyom tool, when it's installed and the tile has no `open` command.
 DETAILS = {"wifi": ("tarang", []), "bluetooth": ("setu", []), "hotspot": ("tarang", ["hotspot"])}
 CHEVRON = "\U000f0142"
@@ -58,7 +58,18 @@ class TileButton(Gtk.Button):
         if self.internal and self.internal[0] not in getattr(plugin.vyom, "plugins", {}):
             self.internal = None
         box = Gtk.Box(spacing=9)
-        icon = ui.label(tile.icon, "qs-icon", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+        if tile.icon_svg:
+            # A line drawing, painted in the icon's CSS colour (paint_icon).
+            icon = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            icon.add_css_class("qs-icon")
+            self.svg_img = Gtk.Image(pixel_size=18, hexpand=True, vexpand=True,
+                                     halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            icon.append(self.svg_img)
+            self.svg_box, self.svg_color = icon, None
+            GLib.idle_add(lambda: (self.paint_icon(), False)[1])
+        else:
+            icon = ui.label(tile.icon, "qs-icon", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            self.svg_img = None
         box.append(icon)
         text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, hexpand=True)
         text.append(ui.label(tile.title, "qs-title", xalign=0))
@@ -99,10 +110,23 @@ class TileButton(Gtk.Button):
         (self.add_css_class if on else self.remove_css_class)("on")
         # On / Off in words, so the tint isn't the only sign. A tile with details
         # names what it's on instead (its subtitle says "Off" when it's off).
+        if self.svg_img is not None:
+            GLib.idle_add(lambda: (self.paint_icon(), False)[1])
         word = on is not None and self.tile.shows_state and not self.has_details()
         self.state.set_visible(word)
         if word:
             self.state.set_label("On" if on else "Off")
+
+    def paint_icon(self):
+        """The tile's line drawing, in the colour its CSS gives the icon now."""
+        c = self.svg_box.get_color()
+        color = f"#{round(c.red * 255):02x}{round(c.green * 255):02x}{round(c.blue * 255):02x}"
+        if color == self.svg_color:
+            return
+        self.svg_color = color
+        px = 18 * max(1, self.get_scale_factor())
+        svg = self.tile.icon_svg.replace("currentColor", color).replace("<svg ", f'<svg width="{px}" height="{px}" ', 1)
+        self.svg_img.set_from_paintable(Gdk.Texture.new_from_bytes(GLib.Bytes.new(svg.encode())))
 
     def activate_tile(self):
         want = not self.on if self.on is not None else True

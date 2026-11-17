@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **The caffeine tile is now Jyoti** (ज्योति, the flame), as across Vayu and ekatva, with its lamp, the diya, as a line drawing. Its key in `tiles` and `[plugin.kendra.tile.…]` is `jyoti`; `caffeine` still works.
+- A tile can have a line drawing for its icon: `icon_svg = "path/to.svg"` (in `currentColor`), painted in the icon's colour like a glyph.
+
 ## v0.3.1 -- 2026-11-09
 
 - **A click on a tile's `>` arrow opens its panel** (Wi-Fi in tarang, Bluetooth in setu, the hotspot); a click anywhere else on the tile still toggles it.

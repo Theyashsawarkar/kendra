@@ -16,7 +16,7 @@
 <!-- /identity -->
 
 <p align="center">
-  <b>Quick settings: Wi-Fi, Bluetooth, hotspot, DND, caffeine, theme, wallpaper, power profile, volume, brightness, battery, lock, power.</b><br>
+  <b>Quick settings: Wi-Fi, Bluetooth, hotspot, DND, jyoti (keep awake), theme, wallpaper, power profile, volume, brightness, battery, lock, power.</b><br>
   Quick settings. A tool for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>, keyboard-driven panels for Wayland.
 </p>
 
@@ -35,7 +35,7 @@
 
 > *Kendra* (केन्द्र) is Sanskrit for "centre": the centre every quick setting sits in.
 
-kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): one keyboard-driven panel that opens instantly, with live data, a preview and a key for everything. It runs on any compositor with the layer-shell protocol (sway, Hyprland, river, niri, Wayfire, labwc…). In [Vayu](https://github.com/Theyashsawarkar/vayu), the desktop it was built for, it replaces the theme / wallpaper / caffeine capsules on the bar.
+kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): one keyboard-driven panel that opens instantly, with live data, a preview and a key for everything. It runs on any compositor with the layer-shell protocol (sway, Hyprland, river, niri, Wayfire, labwc…). In [Vayu](https://github.com/Theyashsawarkar/vayu), the desktop it was built for, it replaces the theme / wallpaper / jyoti (keep awake) capsules on the bar.
 
 ## Contents
 
@@ -51,7 +51,7 @@ kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): on
 ## Features
 
 - A panel under the bar's top-right corner: your initial, a greeting, **chips for the battery and uptime**, and **lock and power** buttons set apart (power in red; `Space l` and `Space p` do the same).
-- Tiles: **Wi‑Fi, Bluetooth, hotspot, do not disturb, caffeine, dark theme, new wallpaper, power profile**. Every toggle **writes On or Off**, and an "on" tile **fills its icon in the tile's colour**, so you never guess from a faint tint.
+- Tiles: **Wi‑Fi, Bluetooth, hotspot, do not disturb, jyoti (keeping the laptop awake), dark theme, new wallpaper, power profile**. Every toggle **writes On or Off**, and an "on" tile **fills its icon in the tile's colour**, so you never guess from a faint tint.
 - **Wi‑Fi and Bluetooth name what they're on** ("Home Fiber 5G", "WH-1000XM5 · 78%", with the headphones' battery), and `o` opens their details: [tarang](https://github.com/Theyashsawarkar/tarang) and [setu](https://github.com/Theyashsawarkar/setu) when they're installed, or your own `open` command (`Shift+Enter`, a right click, or a click on the tile's `>` arrow too; a click anywhere else on the tile toggles it).
 - **Volume and brightness** sliders that show their value, a thick track and a big thumb; volume **names the output device**, and its icon button (or `m`) mutes.
 - **Vim keys** (Vyom 0.7): `h` / `j` / `k` / `l` move, `Enter` toggles, `Space` is the leader and never toggles a tile, `?` lists every key.
@@ -143,9 +143,9 @@ Everything is optional, in `~/.config/vyom/config.toml` under `[plugin.kendra]`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `tiles` | wifi bluetooth hotspot dnd caffeine theme wallpaper power-profile | Which tiles, in order |
+| `tiles` | wifi bluetooth hotspot dnd jyoti theme wallpaper power-profile | Which tiles, in order |
 | `lock / power` | loginctl lock-session / vishram | The header buttons (power: vishram inside Vyom when it's installed) |
-| `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, color (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
+| `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
 | `margin_top / margin_right` | 6 / 8 | Position under the bar |
 
 Run `vyom reload` after editing.

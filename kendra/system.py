@@ -46,6 +46,9 @@ class Tile:
     """A toggle. status() returns (on, subtitle); on is True/False, or None
     for a tile that only does something (no on/off state)."""
     key = title = icon = ""
+    # A line drawing instead of the glyph: SVG markup in currentColor, drawn
+    # in the icon's colour like a glyph (faint when off, filled when on).
+    icon_svg = None
     color = "mauve"
     shows_state = True          # writes "On" / "Off" at its right
 
@@ -75,6 +78,15 @@ class CommandTile(Tile):
         self.key = key
         self.title = conf.get("title", defaults.get("title", key))
         self.icon = conf.get("icon", defaults.get("icon", ""))
+        svg = conf.get("icon_svg")   # a path to an SVG, in config.toml
+        if svg:
+            try:
+                with open(os.path.expanduser(svg)) as f:
+                    self.icon_svg = f.read()
+            except OSError:
+                self.icon_svg = None
+        else:
+            self.icon_svg = defaults.get("icon_svg")
         self.color = conf.get("color", defaults.get("color", "mauve"))
 
     def available(self):
@@ -229,10 +241,22 @@ class PowerProfile(Tile):
         run(["powerprofilesctl", "set", nxt])
 
 
+JYOTI = {
+    "title": "Jyoti", "icon": "\U000f0238", "color": "peach",
+    "icon_svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.5h16a8 6 0 0 1-16 0z"/>'
+                '<path d="M9.5 22h5"/><path d="M12 4.6c1.9 2.3 2.7 4 2.7 5.3a2.7 2.7 0 0 1-5.4 0c0-1.3.8-3 2.7-5.3z"/>'
+                '<path d="M12 9.2v1.2"/></svg>',
+}
 BUILTIN = {t.key: t for t in (Wifi, Bluetooth, Hotspot, DoNotDisturb, DarkTheme, PowerProfile)}
 # Defaults for tiles that only exist through your commands.
 COMMAND_DEFAULTS = {
-    "caffeine": {"title": "Caffeine", "icon": "\U000f0176", "color": "peach"},
+    # Jyoti (ज्योति, the flame): the laptop stays awake. Its lamp is the diya
+    # (ekatva's Akhaṇḍa), a line drawing. "jagaran" and "caffeine" are its
+    # names in configs from before.
+    "jyoti": JYOTI,
+    "jagaran": JYOTI,
+    "caffeine": JYOTI,
     "wallpaper": {"title": "New wallpaper", "icon": "\U000f02e9", "color": "yellow"},
 }
 
