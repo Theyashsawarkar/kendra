@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **Jyoti's icon is a flame**: ekatva's flame in one colour, its heart cut out, painted in the tile's colour. A vector, sharp at the 18 px it's shown at.
+
 ## v0.4.0 -- 2026-11-17
 
 - **The caffeine tile is now Jyoti** (ज्योति, the flame), as across Vayu and ekatva, with its lamp, the diya, as a line drawing. Its key in `tiles` and `[plugin.kendra.tile.…]` is `jyoti`; `caffeine` still works.

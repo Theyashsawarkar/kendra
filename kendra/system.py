@@ -243,16 +243,20 @@ class PowerProfile(Tile):
 
 JYOTI = {
     "title": "Jyoti", "icon": "\U000f0238", "color": "peach",
-    "icon_svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-                'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.5h16a8 6 0 0 1-16 0z"/>'
-                '<path d="M9.5 22h5"/><path d="M12 4.6c1.9 2.3 2.7 4 2.7 5.3a2.7 2.7 0 0 1-5.4 0c0-1.3.8-3 2.7-5.3z"/>'
-                '<path d="M12 9.2v1.2"/></svg>',
+    # ekatva's flame (apps/mobile/src/ui/jyoti-art.ts), in one colour with its
+    # heart cut out, painted in the tile's colour like a glyph. A vector, so
+    # it's sharp at the 18 px it's shown at.
+    "icon_svg": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><title>Jyoti</title><path d="M100 190C70 190 44 172 42 142C40 120 50 106 58 92C62 86 60 80 56 72C64 80 72'
+                 ' 92 72 104C72 84 80 68 86 52C92 38 92 24 86 12C108 26 122 46 122 66C122 76 120 84 116'
+                 ' 90C128 84 140 76 148 60C152 80 160 96 160 120C160 160 132 190 100 190Z M100 182C84 182'
+                 ' 74 170 74 154C74 138 86 126 98 112C100 124 108 128 114 134C122 142 126 150 126 158C126'
+                 ' 172 114 182 100 182Z" fill="currentColor" fill-rule="evenodd"/></svg>'),
 }
 BUILTIN = {t.key: t for t in (Wifi, Bluetooth, Hotspot, DoNotDisturb, DarkTheme, PowerProfile)}
 # Defaults for tiles that only exist through your commands.
 COMMAND_DEFAULTS = {
-    # Jyoti (ज्योति, the flame): the laptop stays awake. Its lamp is the diya
-    # (ekatva's Akhaṇḍa), a line drawing. "jagaran" and "caffeine" are its
+    # Jyoti (ज्योति, the flame): the laptop stays awake. Its icon is ekatva's
+    # flame. "jagaran" and "caffeine" are its
     # names in configs from before.
     "jyoti": JYOTI,
     "jagaran": JYOTI,
