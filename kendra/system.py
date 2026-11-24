@@ -51,6 +51,11 @@ class Tile:
     icon_svg = None
     color = "mauve"
     shows_state = True          # writes "On" / "Off" at its right
+    # Levels a tile can be on at (e.g. Jyoti: Akhaṇḍa, Nandādīpa): a list of
+    # {"name", "when", "set"}; empty for a plain on/off tile. `level` is the
+    # one status() last found, or None.
+    levels = ()
+    level = None
 
     def __init__(self, conf=None):
         self.conf = conf or {}
@@ -71,6 +76,11 @@ class CommandTile(Tile):
       status   prints the state; on when its output matches on_when (regex)
       toggle   one command for both directions, or on / off for each
       subtitle_on / subtitle_off   what the tile says under its title
+      levels   while on, the levels it can be at, each a table:
+               name (shown), when (regex on the status output: this level
+               is current), set (the command that switches to it). The
+               tile's subtitle then names the current level, and a row of
+               the levels shows under the tiles to pick one.
     A tile with only `run` is an action (e.g. fetch a new wallpaper)."""
 
     def __init__(self, key, conf, defaults):
@@ -88,9 +98,13 @@ class CommandTile(Tile):
         else:
             self.icon_svg = defaults.get("icon_svg")
         self.color = conf.get("color", defaults.get("color", "mauve"))
+        # A level needs all three keys; one missing one is left out (never a crash).
+        self.levels = [lv for lv in conf.get("levels", ())
+                       if isinstance(lv, dict) and all(lv.get(k) for k in ("name", "when", "set"))]
 
     def available(self):
         cmds = [self.conf.get(k) for k in ("status", "toggle", "on", "off", "run") if self.conf.get(k)]
+        cmds += [lv["set"] for lv in self.levels]
         return bool(cmds) and all(have(c) for c in cmds)
 
     def status(self):
@@ -98,7 +112,17 @@ class CommandTile(Tile):
             return None, self.conf.get("subtitle", "")
         _, out = run(self.conf["status"])
         on = re.search(self.conf.get("on_when", r"^(on|yes|true|active|enabled|1)$"), out, re.M) is not None
+        self.level = None
+        if on:
+            self.level = next((lv["name"] for lv in self.levels if re.search(lv["when"], out, re.M)), None)
+            if self.level:
+                return on, self.level
         return on, self.conf.get("subtitle_on" if on else "subtitle_off", "on" if on else "off")
+
+    def set_level(self, name):
+        lv = next((lv for lv in self.levels if lv["name"] == name), None)
+        if lv is not None:
+            run(lv["set"], timeout=15)
 
     def toggle(self, on):
         if "run" in self.conf and "status" not in self.conf:

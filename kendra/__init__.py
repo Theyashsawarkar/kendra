@@ -60,7 +60,11 @@ class TileButton(Gtk.Button):
         box = Gtk.Box(spacing=9)
         if tile.icon_svg:
             # A line drawing, painted in the icon's CSS colour (paint_icon).
-            icon = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            # hexpand/vexpand=False on the square: the image expands to stay
+            # centred in it, and GTK passed that up, so the square took the
+            # tile's spare width (the title sat right of every other tile's)
+            # and, when the panel shrank, its spare height (a tall tile row).
+            icon = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=False, vexpand=False)
             icon.add_css_class("qs-icon")
             self.svg_img = Gtk.Image(pixel_size=18, hexpand=True, vexpand=True,
                                      halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
@@ -112,6 +116,9 @@ class TileButton(Gtk.Button):
         # names what it's on instead (its subtitle says "Off" when it's off).
         if self.svg_img is not None:
             GLib.idle_add(lambda: (self.paint_icon(), False)[1])
+        row = getattr(self, "level_row", None)
+        if row is not None:
+            row.update(on, self.tile.level)
         word = on is not None and self.tile.shows_state and not self.has_details()
         self.state.set_visible(word)
         if word:
@@ -147,6 +154,46 @@ class TileButton(Gtk.Button):
 
     def refresh(self):
         self.plugin.background(self.tile.status, then=lambda r: self.show_state(*r) if isinstance(r, tuple) else None)
+
+
+class LevelRow(Gtk.Box):
+    """The levels of a tile that has them (config `levels`), shown under the
+    tiles while it's on: its name, then one button per level, the current
+    one filled in the tile's colour. A click (or Enter) switches to it."""
+
+    def __init__(self, plugin, button):
+        super().__init__(spacing=6)
+        self.plugin, self.button, self.tile = plugin, button, button.tile
+        self.add_css_class("qs-levels")
+        self.add_css_class(f"q-{self.tile.color}")
+        self.append(ui.label(self.tile.title, "qs-level-name", valign=Gtk.Align.CENTER, hexpand=True, xalign=0))
+        self.buttons = {}
+        for lv in self.tile.levels:
+            b = Gtk.Button(label=lv["name"], valign=Gtk.Align.CENTER,
+                           tooltip_text=f"Switch {self.tile.title} to {lv['name']}")
+            b.add_css_class("qs-level")
+            b.connect("clicked", lambda _b, n=lv["name"]: self.pick(n))
+            self.buttons[lv["name"]] = b
+            self.append(b)
+        self.set_visible(False)
+
+    def update(self, on, level):
+        was = self.get_visible()
+        self.set_visible(bool(on))
+        if was and not on:
+            # The panel keeps its height when content goes away; ask it to
+            # fit again (as Vyom does leaving fullscreen), so no empty band.
+            win = self.get_root()
+            if win is not None and not getattr(win, "full", False) and hasattr(win, "set_default_size"):
+                win.set_default_size(1, 1)
+        for name, b in self.buttons.items():
+            (b.add_css_class if name == level else b.remove_css_class)("on")
+
+    def pick(self, name):
+        if name == self.tile.level:
+            return
+        self.update(True, name)          # at once; the status check confirms it
+        self.plugin.background(lambda: self.tile.set_level(name), then=lambda _r: self.button.refresh())
 
 
 class SliderRow(Gtk.Box):
@@ -255,7 +302,8 @@ class Plugin(Base):
 
     def mark_focus(self):
         focus = self.panel.get_focus() if self.panel is not None else None
-        for w in self.tiles + [s.scale for s in self.sliders] + [s.icon for s in self.sliders] + \
+        levels = [b for r in getattr(self, "level_rows", []) for b in r.buttons.values()]
+        for w in self.tiles + levels + [s.scale for s in self.sliders] + [s.icon for s in self.sliders] + \
                 list(getattr(self, "session_buttons", [])):
             (w.add_css_class if w is focus else w.remove_css_class)("sel")
 
@@ -274,6 +322,14 @@ class Plugin(Base):
             grid.attach(b, n % 2, n // 2, 1, 1)
             self.tiles.append(b)
         root.append(grid)
+        # Tiles with levels (Jyoti: Akhaṇḍa / Nandādīpa) get a row to pick one,
+        # shown while the tile is on.
+        self.level_rows = []
+        for b in self.tiles:
+            if b.tile.levels:
+                b.level_row = LevelRow(self, b)
+                root.append(b.level_row)
+                self.level_rows.append(b.level_row)
         sliders = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sliders.add_css_class("qs-sliders")
         for src, css, name in ((system.Volume(), "volume", "Volume"), (system.Brightness(), "brightness", "Brightness")):

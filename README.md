@@ -58,6 +58,7 @@ kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): on
 - A clear **accent frame** on the tile or slider you're on.
 - Opens instantly with the last state, then refreshes every tile in the background; anything the machine doesn't have isn't shown.
 - Any tile can be driven by your own commands (`status` / `toggle` / `on` / `off`, matched with `on_when`).
+- A tile can have **levels** (Jyoti: Akhaṇḍa, Nandādīpa): while it's on, a row under the tiles picks one, and the tile's subtitle names it.
 - Keyboard first: every action has a key, shown in the footer; the mouse works too.
 - Never freezes the panel: slow commands run in the background.
 
@@ -145,8 +146,21 @@ Everything is optional, in `~/.config/vyom/config.toml` under `[plugin.kendra]`:
 |---|---|---|
 | `tiles` | wifi bluetooth hotspot dnd jyoti theme wallpaper power-profile | Which tiles, in order |
 | `lock / power` | loginctl lock-session / vishram | The header buttons (power: vishram inside Vyom when it's installed) |
-| `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
+| `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color, levels (below) (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
 | `margin_top / margin_right` | 6 / 8 | Position under the bar |
+
+A tile with levels lists them under `levels`, each with a `name`, a `when` (a regex on the `status` output: this level is the current one) and a `set` command. While the tile is on, a row under the tiles shows a button per level, the current one filled in the tile's colour; click one (or move to it with `j` and press `Enter`) to switch. Clicking the tile itself still turns it on or off.
+
+```toml
+[plugin.kendra.tile.jyoti]
+status = "~/.local/bin/jyoti-status.sh"
+on_when = '"class":"(active|strong)"'
+toggle = "~/.local/bin/jyoti-toggle.sh"
+levels = [
+  { name = "Akhaṇḍa", when = '"class":"active"', set = "~/.local/bin/jyoti-toggle.sh akhanda" },
+  { name = "Nandādīpa", when = '"class":"strong"', set = "~/.local/bin/jyoti-toggle.sh nandadipa" },
+]
+```
 
 Run `vyom reload` after editing.
 

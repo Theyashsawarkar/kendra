@@ -2,8 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.5.0 -- 2026-11-24
 
+- **Tiles can have levels**: `levels = [{ name, when, set }, …]` on a command tile. While it's on, a row under the tiles shows a button per level (the current one filled in the tile's colour) to switch with a click or `j` and `Enter`, and the tile's subtitle names the level. For Jyoti in Vayu: Akhaṇḍa or Nandādīpa, where quick settings could only turn it on or off.
+- **Fixed: the Jyoti tile's title sat further right than every other tile's**, and its row could grow tall: the flame's square took the tile's spare room.
 - **Jyoti's icon is a flame**: ekatva's flame in one colour, its heart cut out, painted in the tile's colour. A vector, sharp at the 18 px it's shown at.
 
 ## v0.4.0 -- 2026-11-17

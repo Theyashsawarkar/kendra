@@ -59,6 +59,29 @@ button.qs-tile.on.q-mauve .qs-state  { color: @mauve; }
 button.qs-tile.on.q-yellow .qs-state { color: @yellow; }
 button.qs-tile.on.q-green .qs-state  { color: @green; }
 
+/* A tile's levels (Jyoti: Akhaṇḍa / Nandādīpa), under the tiles while it's on:
+   rounded buttons, the current one filled in the tile's colour. */
+.qs-levels {
+  margin-top: 8px; padding: 6px 6px 6px 12px; border-radius: 12px;
+  background: alpha(white, 0.045); border: 1px solid alpha(white, 0.07);
+}
+.qs-level-name { color: @overlay2; font-size: 12px; }
+button.qs-level {
+  min-height: 26px; padding: 0 12px; border-radius: 13px; box-shadow: none;
+  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09);
+  color: @subtext1; font-size: 12px; font-weight: 650;
+}
+button.qs-level:hover { background: alpha(white, 0.12); color: @text; }
+button.qs-level.sel { outline: 2px solid @accent; outline-offset: 1px; }
+.qs-levels.q-sky button.qs-level.on    { background: @sky; color: @crust; border-color: @sky; }
+.qs-levels.q-blue button.qs-level.on   { background: @blue; color: @crust; border-color: @blue; }
+.qs-levels.q-teal button.qs-level.on   { background: @teal; color: @crust; border-color: @teal; }
+.qs-levels.q-red button.qs-level.on    { background: @red; color: @crust; border-color: @red; }
+.qs-levels.q-peach button.qs-level.on  { background: @peach; color: @crust; border-color: @peach; }
+.qs-levels.q-mauve button.qs-level.on  { background: @mauve; color: @crust; border-color: @mauve; }
+.qs-levels.q-yellow button.qs-level.on { background: @yellow; color: @crust; border-color: @yellow; }
+.qs-levels.q-green button.qs-level.on  { background: @green; color: @crust; border-color: @green; }
+
 /* Sliders: the name (and output device) over a thick track, a big thumb, the value. */
 .qs-sliders { margin: 12px 2px 2px 2px; }
 button.qs-slider-icon {
