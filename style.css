@@ -1,5 +1,7 @@
-/* kendra: quick settings. Colors come from Vyom's style.css (@mauve...). */
-.plugin-kendra .qs { padding: 12px 12px 0 12px; }
+/* kendra: quick settings, in Vyom's Spatial look: glass tiles, round icons that
+   fill with their colour when on, brighter glass where you are. Colours come
+   from Vyom's style.css (@accent, @green...). */
+.plugin-kendra .qs { padding: 14px 14px 0 14px; }
 .qs-header { margin-bottom: 12px; }
 .qs-avatar {
   min-width: 34px; min-height: 34px; border-radius: 17px;
@@ -9,39 +11,39 @@
 /* Lock and power: round, apart from the tiles; power in red (it leads to the
    final actions). */
 button.qs-round {
-  min-width: 32px; min-height: 32px; padding: 0; border-radius: 16px;
-  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09);
+  min-width: 34px; min-height: 34px; padding: 0; border-radius: 999px;
+  background: alpha(white, 0.08); border: none;
   font-family: "JetBrainsMono Nerd Font"; font-size: 15px; color: @subtext1; box-shadow: none;
 }
-button.qs-round.power { margin-left: 4px; color: @red; background: alpha(@red, 0.14); border-color: alpha(@red, 0.35); }
+button.qs-round.power { margin-left: 6px; color: @red; background: alpha(@red, 0.16); }
 button.qs-round:hover { background: alpha(white, 0.12); color: @text; }
 button.qs-round.power:hover { background: alpha(@red, 0.24); color: @red; }
-button.qs-round.sel { outline: 2px solid @accent; outline-offset: 2px; }
+button.qs-round.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 2px; }
 
 button.qs-tile {
-  padding: 7px 8px 7px 9px; border-radius: 12px; min-height: 36px;
-  background: alpha(white, 0.045); border: 1px solid alpha(white, 0.07);
-  box-shadow: none; color: @text; outline: none;
+  padding: 8px 10px 8px 9px; border-radius: 20px; min-height: 38px;
+  background: alpha(white, 0.06); border: none;
+  box-shadow: inset 0 1px 0 alpha(white, 0.05); color: @text; outline: none;
 }
-button.qs-tile:hover { background: alpha(white, 0.085); }
-/* Where you are: an accent frame you can't miss. */
-button.qs-tile.sel { outline: 2px solid @accent; outline-offset: 1px; background: alpha(@accent, 0.10); }
-/* The icon in a rounded square: faint when off, filled in the tile's colour when on. */
+button.qs-tile:hover { background: alpha(white, 0.10); }
+/* Where you are: a light rim you can't miss, on brighter glass. */
+button.qs-tile.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; background: alpha(@accent, 0.14); }
+/* The icon in a circle: faint when off, filled in the tile's colour when on. */
 .qs-icon {
   font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @overlay2;
-  min-width: 30px; min-height: 30px; border-radius: 9px; background: alpha(white, 0.07);
+  min-width: 32px; min-height: 32px; border-radius: 999px; background: alpha(white, 0.08);
 }
 .qs-title { font-weight: 650; font-size: 12.5px; }
 .qs-sub { color: @overlay2; font-size: 11.5px; }
 .qs-state { font-size: 12px; font-weight: 700; color: @overlay1; }
 .qs-more {
   font-family: "JetBrainsMono Nerd Font"; color: @overlay1; font-size: 15px;
-  min-width: 24px; min-height: 28px; border-radius: 8px;
+  min-width: 26px; min-height: 26px; border-radius: 999px;
 }
 /* The arrow is a button of its own (it opens the details): it lights up under the pointer. */
 .qs-more:hover { background: alpha(white, 0.12); color: @text; }
 button.qs-tile.on .qs-sub { color: @subtext1; }
-button.qs-tile.on { background: alpha(white, 0.07); border-color: alpha(white, 0.11); }
+button.qs-tile.on { background: alpha(white, 0.15); box-shadow: inset 0 1px 0 alpha(white, 0.12); }
 button.qs-tile.on.q-sky .qs-icon    { background: @sky; color: @crust; }
 button.qs-tile.on.q-blue .qs-icon   { background: @blue; color: @crust; }
 button.qs-tile.on.q-teal .qs-icon   { background: @teal; color: @crust; }
@@ -62,17 +64,17 @@ button.qs-tile.on.q-green .qs-state  { color: @green; }
 /* A tile's levels (Jyoti: Akhaṇḍa / Nandādīpa), under the tiles while it's on:
    rounded buttons, the current one filled in the tile's colour. */
 .qs-levels {
-  margin-top: 8px; padding: 6px 6px 6px 12px; border-radius: 12px;
-  background: alpha(white, 0.045); border: 1px solid alpha(white, 0.07);
+  margin-top: 10px; padding: 5px 5px 5px 14px; border-radius: 999px;
+  background: alpha(white, 0.06); border: none;
 }
 .qs-level-name { color: @overlay2; font-size: 12px; }
 button.qs-level {
-  min-height: 26px; padding: 0 12px; border-radius: 13px; box-shadow: none;
-  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09);
+  min-height: 28px; padding: 0 14px; border-radius: 999px; box-shadow: none;
+  background: alpha(white, 0.08); border: none;
   color: @subtext1; font-size: 12px; font-weight: 650;
 }
 button.qs-level:hover { background: alpha(white, 0.12); color: @text; }
-button.qs-level.sel { outline: 2px solid @accent; outline-offset: 1px; }
+button.qs-level.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; }
 .qs-levels.q-sky button.qs-level.on    { background: @sky; color: @crust; border-color: @sky; }
 .qs-levels.q-blue button.qs-level.on   { background: @blue; color: @crust; border-color: @blue; }
 .qs-levels.q-teal button.qs-level.on   { background: @teal; color: @crust; border-color: @teal; }
@@ -83,14 +85,14 @@ button.qs-level.sel { outline: 2px solid @accent; outline-offset: 1px; }
 .qs-levels.q-green button.qs-level.on  { background: @green; color: @crust; border-color: @green; }
 
 /* Sliders: the name (and output device) over a thick track, a big thumb, the value. */
-.qs-sliders { margin: 12px 2px 2px 2px; }
+.qs-sliders { margin: 14px 2px 4px 2px; }
 button.qs-slider-icon {
-  min-width: 30px; min-height: 30px; padding: 0; border-radius: 9px;
-  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.08); box-shadow: none;
+  min-width: 32px; min-height: 32px; padding: 0; border-radius: 999px;
+  background: alpha(white, 0.08); border: none; box-shadow: none;
   font-family: "JetBrainsMono Nerd Font"; font-size: 15px;
 }
 button.qs-slider-icon:hover { background: alpha(white, 0.12); }
-button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
+button.qs-slider-icon.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; }
 .qs-slider.volume button.qs-slider-icon { color: @blue; }
 .qs-slider.brightness button.qs-slider-icon { color: @yellow; }
 .qs-slider.is-muted button.qs-slider-icon { color: @red; }
@@ -98,14 +100,14 @@ button.qs-slider-icon.sel { outline: 2px solid @accent; outline-offset: 1px; }
 .qs-value { color: @text; font-weight: 700; font-family: "JetBrainsMono Nerd Font"; font-size: 12.5px; }
 .qs-value.muted { color: @red; }
 .qs-slider scale { padding: 6px 0; }
-.qs-slider scale trough { min-height: 10px; border-radius: 5px; background: alpha(white, 0.10); }
-.qs-slider scale highlight { min-height: 10px; min-width: 10px; border-radius: 5px; }
+.qs-slider scale trough { min-height: 12px; border-radius: 999px; background: alpha(white, 0.12); }
+.qs-slider scale highlight { min-height: 12px; min-width: 12px; border-radius: 999px; }
 .qs-slider.volume scale highlight { background: @blue; }
 .qs-slider.brightness scale highlight { background: @yellow; }
 .qs-slider.is-muted scale highlight { background: @overlay0; }
-.qs-slider scale slider { min-width: 22px; min-height: 22px; margin: -6px; border-radius: 11px; background: @text;
+.qs-slider scale slider { min-width: 22px; min-height: 22px; margin: -5px; border-radius: 999px; background: @text;
   box-shadow: 0 1px 3px alpha(black, 0.4); }
-.qs-slider scale.sel slider { box-shadow: 0 0 0 3px @accent; }
+.qs-slider scale.sel slider { box-shadow: 0 0 0 3px alpha(@accent, 0.9); }
 /* GTK's default highlight has a -1px margin: with no border it reports a
    negative size (a warning), so it gets none. */
 .plugin-kendra scale highlight { margin: 0; }

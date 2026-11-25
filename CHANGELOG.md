@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **Spatial look**: tiles are borderless glass with 20 px corners and round icons that fill with their colour when on; on tiles are brighter glass; lock, power, levels and slider icons are round; thicker pill sliders; where you are is a light rim.
+- The website has Vayu's Spatial look: graphite glass, a floating navigation bar, near-white for links and the main button, and the tool's own colour only as its signature (the logo's glow, the shloka's line, the release dots). No more all-caps labels.
+
 ## v0.5.0 -- 2026-11-24
 
 - **Tiles can have levels**: `levels = [{ name, when, set }, …]` on a command tile. While it's on, a row under the tiles shows a button per level (the current one filled in the tile's colour) to switch with a click or `j` and `Enter`, and the tile's subtitle names the level. For Jyoti in Vayu: Akhaṇḍa or Nandādīpa, where quick settings could only turn it on or off.
