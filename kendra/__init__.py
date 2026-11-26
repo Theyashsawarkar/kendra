@@ -38,16 +38,18 @@ from . import bento, system, vim
 # keybind: Vyom/quick settings | Shift+Enter | Open the focused setting's details (same as o)
 # END KEYBINDS
 
-DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "dnd", "jyoti", "theme", "wallpaper", "power-profile"]
+DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "notifications", "dnd", "jyoti", "theme", "wallpaper", "power-profile"]
 # A tile's details in another Vyom tool, when it's installed and the tile has no `open` command.
 DETAILS = {"wifi": ("tarang", []), "bluetooth": ("setu", []), "hotspot": ("tarang", ["hotspot"]),
            "power-profile": ("urja", [])}
 # Where each part sits in the bento (column, row, width, height), 4 columns.
 WIFI, VOLUME, BRIGHT = (0, 0, 2, 3), (2, 0, 1, 3), (3, 0, 1, 3)
-JYOTI, BT, POWER = (0, 3, 2, 1), (2, 3, 2, 3), (0, 4, 2, 1)
-SMALL_ROW, BOTTOM = 5, 6
-SMALL = ("hotspot", "ekatva")          # circles under Jyoti and power
-QUIET = ("dnd", "theme")                # circles in the bottom row, before the wallpaper
+JYOTI, BT, NOTIFY, POWER = (0, 3, 2, 1), (2, 3, 2, 3), (0, 4, 2, 1), (0, 5, 2, 1)
+BOTTOM = 6
+# circles in the bottom row, before the wallpaper (dnd only when there's no
+# three-way notifications tile)
+CIRCLES = ("hotspot", "ekatva", "dnd", "theme")
+BELL, BELL_X, BELL_OFF = "\U000f009a", "\U000f00a0", "\U000f009b"
 FLAME = "\U000f0238"
 OFF = "\U000f073a"
 
@@ -184,35 +186,34 @@ class Plugin(Base):
                                             open_fn=lambda: self.open_details("power-profile", None))
                 place(self.power, POWER)
                 self.focusables += list(self.power.buttons.values())
-        # The small circles: the hotspot and the phone first, then any other
-        # tile you listed that has no place of its own.
-        known = {"wifi", "bluetooth", "jyoti", "jagaran", "caffeine", "power-profile", "wallpaper", *QUIET}
-        small = [k for k in SMALL if k in keys] + [k for k in keys if k not in known and k not in SMALL]
-        col, extra = 0, []
-        for k in small:
-            t = self.tile(k)
-            if not t:
-                continue
-            c = bento.Circle(self, t)
-            if col < 2:
-                grid.attach(c, col, SMALL_ROW, 1, 1)
-            else:   # more than two: they join the bottom row
-                extra.append(c)
-            col += 1
-            self.parts.append(c)
-            self.focusables.append(c)
+        # Notifications: a tile with levels (normal / silent / dnd) is a
+        # three-way pill; without one, a plain dnd circle in the bottom row.
+        t = self.tile("notifications")
+        self.notify = None
+        if t and t.levels:
+            looks = {0: (BELL, "white"), 1: (BELL_X, "yellow"), 2: (BELL_OFF, "red")}
+            opts = []
+            for i, lv in enumerate(t.levels):
+                icon, color = looks.get(i, (BELL, "gray"))
+                opts.append((lv["name"], lv["name"], lv.get("icon", icon), lv.get("color", color)))
+            self.notify = bento.Segments(self, t.title, opts, lambda k, t=t: self.pick_level(t, k, self.refresh_notify),
+                                         words={lv["name"]: lv.get("about", "") for lv in t.levels})
+            self.notify.tile = t
+            place(self.notify, NOTIFY)
+            self.focusables += list(self.notify.buttons.values())
+        known = {"wifi", "bluetooth", "jyoti", "jagaran", "caffeine", "power-profile", "wallpaper",
+                 "notifications", *CIRCLES}
         bottom = Gtk.Box(spacing=8)
         bottom.add_css_class("k-bottom")
-        for k in QUIET:
+        for k in [*CIRCLES, *[k for k in keys if k not in known]]:
+            if k == "dnd" and self.notify is not None:
+                continue
             t = self.tile(k)
             if t:
                 c = bento.Circle(self, t, size=42)
                 bottom.append(c)
                 self.parts.append(c)
                 self.focusables.append(c)
-        for c in extra:
-            c.set_size_request(42, 42)
-            bottom.append(c)
         t = self.tile("wallpaper")
         if t:
             self.wall = bento.WallpaperPill(self, t)
@@ -275,6 +276,15 @@ class Plugin(Base):
                     t.toggle(True)
                 t.set_level(key)
         self.background(work, then=lambda _r: self.refresh_jyoti())
+
+    def pick_level(self, t, name, then):
+        self.background(lambda: t.set_level(name), then=lambda _r: then())
+
+    def refresh_notify(self):
+        if self.notify is None:
+            return
+        t = self.notify.tile
+        self.background(t.status, then=lambda r: self.notify.show(t.level) if isinstance(r, tuple) else None)
 
     def pick_power(self, pid):
         self.background(lambda: system.set_power_profile(pid), then=lambda _r: self.refresh_power())
@@ -406,6 +416,7 @@ class Plugin(Base):
         if self.bt is not None:
             self.refresh_bt()
         self.refresh_jyoti()
+        self.refresh_notify()
         self.refresh_power()
         for p in self.parts:
             if isinstance(p, bento.Circle):

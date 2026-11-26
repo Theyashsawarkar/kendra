@@ -84,6 +84,8 @@ button.k-opt { min-width: 30px; padding: 0 8px; border-radius: 999px; border: no
 button.k-opt:hover { background: alpha(white, 0.08); }
 button.k-opt.on { color: @crust; }
 button.k-opt.on.q-gray { background: alpha(white, 0.16); color: @text; }
+button.k-opt.on.q-white { background: @accent; }
+button.k-opt.on.q-red { background: @red; }
 button.k-opt.on.q-sky { background: @sky; }
 button.k-opt.on.q-peach { background: @peach; }
 button.k-opt.on.q-yellow { background: @yellow; }
@@ -91,15 +93,15 @@ button.k-opt.on.q-green { background: @green; }
 .k-opt-name { font-weight: 650; font-size: 11.5px; }
 
 /* tall capsules: a fill from the bottom, the value on top, the icon at the foot */
-.k-tall { border-radius: 999px; background: alpha(black, 0.28); border: 1px solid alpha(white, 0.08);
-  box-shadow: inset 0 1px 2px alpha(black, 0.25); }
-.k-tall > drawingarea { color: alpha(@text, 0.92); }
-.k-tall.brightness > drawingarea { color: alpha(@yellow, 0.92); }
-.k-tall.is-muted > drawingarea { color: alpha(@overlay1, 0.6); }
+.k-tall { background: transparent; }
+.k-tall .k-liquid { color: alpha(@text, 0.95); }
+.k-tall.brightness .k-liquid { color: #f0cf7c; }
 .k-tall-value { margin-top: 12px; font-weight: 700; font-size: 10.5px; color: @subtext1; font-feature-settings: "tnum"; }
 .k-tall.full .k-tall-value { color: @crust; }
 .k-tall-icon { margin-bottom: 12px; color: @crust; }
 .k-tall.is-muted .k-tall-icon { color: @red; }
+.k-tall.low .k-tall-icon { color: @subtext1; }
+.k-tall.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 2px; border-radius: 999px; }
 
 /* the bottom row: quiet, theme, and the wallpaper you're on */
 .k-bottom { padding: 4px; border-radius: 999px; background: alpha(black, 0.18); border: 1px solid alpha(white, 0.06); }

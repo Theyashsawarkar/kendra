@@ -122,8 +122,9 @@ class Segments(Gtk.Box, Hoverable):
     Icons only; the one that's chosen grows into a pill in its colour and
     shows its name."""
 
-    def __init__(self, plugin, title, options, on_pick, open_fn=None):
+    def __init__(self, plugin, title, options, on_pick, open_fn=None, words=None):
         super().__init__(spacing=4)
+        words = words or {}
         self.plugin, self.title, self.on_pick, self.open_fn = plugin, title, on_pick, open_fn
         self.add_css_class("k-seg")
         self.buttons, self.current = {}, None
@@ -142,6 +143,7 @@ class Segments(Gtk.Box, Hoverable):
             if open_fn:
                 right_click(b, open_fn)
             self.say_on(b, plugin, lambda n=name: f"<b>{GLib.markup_escape_text(title)}</b>  {n}"
+                        + (f" · {words[n]}" if words.get(n) else "")
                         + ("  · right click: details" if open_fn else ""))
             b.set_tooltip_text(f"{title}: {name}")
             self.buttons[key] = b
@@ -172,11 +174,9 @@ class Tall(Gtk.Overlay, Hoverable):
         self.plugin, self.source, self.name, self.busy, self.pending = plugin, source, name, False, None
         self.add_css_class("k-tall")
         self.add_css_class(css)
-        # slim, standing pills (a wide one looked like a tomato)
-        self.set_size_request(52, -1)
-        self.set_halign(Gtk.Align.CENTER)
-        self.set_overflow(Gtk.Overflow.HIDDEN)
+        self.level, self.vel, self.muted, self.tick = None, 0.0, False, None
         self.fill = Gtk.DrawingArea(hexpand=True, vexpand=True)
+        self.fill.add_css_class("k-liquid")
         self.fill.set_draw_func(self.draw_fill)
         self.set_child(self.fill)
         # The scale does the keys (focus, h / l, 0 / $); the capsule is drawn.
@@ -202,6 +202,32 @@ class Tall(Gtk.Overlay, Hoverable):
             right_click(self, self.toggle_mute)
         self.say_on(self.scale, plugin, self.words)
         self.say_on(self, plugin, self.words)
+        # The surface moves only while the panel shows (a frame clock tick).
+        self.connect("map", lambda *_: self.start_motion())
+        self.connect("unmap", lambda *_: self.stop_motion())
+
+    def start_motion(self):
+        if self.tick is None:
+            self.tick = self.fill.add_tick_callback(self.step)
+
+    def stop_motion(self):
+        if self.tick is not None:
+            self.fill.remove_tick_callback(self.tick)
+            self.tick = None
+
+    def step(self, widget, clock):
+        """The surface springs to the value (a little slosh) and keeps a
+        slow wave; redraws at most ~30 times a second."""
+        target = self.scale.get_value()
+        if self.level is None:
+            self.level = target
+        self.vel = (self.vel + (target - self.level) * 0.08) * 0.78
+        self.level += self.vel
+        t = clock.get_frame_time() / 1e6
+        if t - getattr(self, "last", 0) >= 1 / 30:
+            self.last, self.phase = t, t
+            widget.queue_draw()
+        return GLib.SOURCE_CONTINUE
 
     def point(self, y):
         h = self.get_height() or 1
@@ -209,27 +235,57 @@ class Tall(Gtk.Overlay, Hoverable):
         self.scale.grab_focus()
 
     def draw_fill(self, area, cr, w, h):
-        """The level as a pill inside the pill: inset, round at both ends."""
-        v = self.scale.get_value() / 100
-        pad = 4
-        iw = w - 2 * pad
-        r = iw / 2
-        full = h - 2 * pad
-        fh = max(iw, full * v) if v > 0 else 0
-        if fh <= 0:
-            return
-        x, y = pad, pad + full - fh
-        cr.new_sub_path()
-        cr.arc(x + r, y + r, r, math.pi, 0)
-        cr.arc(x + r, y + fh - r, r, 0, math.pi)
-        cr.close_path()
-        red, g, b, a = rgba(area)
+        """A glass pill holding liquid up to the level: a faint wave behind,
+        a shaded one in front, a thin highlight down the glass."""
         import cairo  # noqa: PLC0415
-        grad = cairo.LinearGradient(0, y, 0, y + fh)
-        grad.add_color_stop_rgba(0, red, g, b, a)
-        grad.add_color_stop_rgba(1, red * 0.86, g * 0.86, b * 0.86, a)
-        cr.set_source(grad)
+
+        def pill():
+            r = (w - 2) / 2
+            cr.new_sub_path()
+            cr.arc(1 + r, 1 + r, r, math.pi, 0)
+            cr.arc(1 + r, h - 1 - r, r, 0, math.pi)
+            cr.close_path()
+        pill()
+        cr.set_source_rgba(1, 1, 1, 0.07)
+        cr.fill_preserve()
+        cr.set_source_rgba(1, 1, 1, 0.13)
+        cr.set_line_width(1)
+        cr.stroke()
+        lv = max(0.0, min(100.0, self.level if self.level is not None else self.scale.get_value())) / 100
+        if lv <= 0:
+            return
+        top, full = 1, h - 2
+        surf = top + full * (1 - lv)
+        amp = 0 if self.muted else 2.2 + min(6, abs(self.vel) * 1.5)
+        ph = getattr(self, "phase", 0) / 0.65
+        red, g, b, a = rgba(area)
+        if self.muted:
+            red = g = b = 0.6
+        cr.save()
+        pill()
+        cr.clip()
+        for back, k, shift, alpha in ((True, 1.3, 1.0, 0.45), (False, 1.1, 0.0, 1.0)):
+            cr.move_to(0, surf)
+            x = 0.0
+            while x <= w:
+                sign = 1 if back else -1
+                cr.line_to(x, surf + math.sin(x / (w / k) * 2 * math.pi + sign * ph * (1.3 if back else 1) + shift) * amp * (0.8 if back else 1))
+                x += 2
+            cr.line_to(w, h)
+            cr.line_to(0, h)
+            cr.close_path()
+            if back:
+                cr.set_source_rgba(red, g, b, a * alpha)
+            else:
+                grad = cairo.LinearGradient(0, surf, 0, h)
+                grad.add_color_stop_rgba(0, red, g, b, a)
+                grad.add_color_stop_rgba(1, red * 0.86, g * 0.86, b * 0.86, a)
+                cr.set_source(grad)
+            cr.fill()
+        cr.set_source_rgba(1, 1, 1, 0.18)
+        cr.rectangle(w * 0.16, surf + 6, 2.5, max(0, h - surf - 14))
         cr.fill()
+        cr.restore()
 
     def words(self):
         v = int(self.scale.get_value())
@@ -244,7 +300,7 @@ class Tall(Gtk.Overlay, Hoverable):
         v = int(scale.get_value())
         self.value.set_label(f"{v}%")
         self.mark_dark(v)
-        self.fill.queue_draw()
+        self.start_motion()
         self.remove_css_class("is-muted")
         if self.busy:
             return
@@ -253,8 +309,9 @@ class Tall(Gtk.Overlay, Hoverable):
         self.pending = GLib.timeout_add(80, self.apply, v)
 
     def mark_dark(self, v):
-        # the value sits on the fill when it's nearly full: dark ink then
+        # dark ink where the liquid covers the number (top) or the icon (foot)
         (self.add_css_class if v >= 88 else self.remove_css_class)("full")
+        (self.add_css_class if v < 14 else self.remove_css_class)("low")
 
     def apply(self, v):
         self.pending = None
@@ -272,10 +329,11 @@ class Tall(Gtk.Overlay, Hoverable):
             self.busy = True
             self.scale.set_value(v)
             self.busy = False
-            self.fill.queue_draw()
+            self.start_motion()
             self.value.set_label("Muted" if muted else f"{v}%")
             self.mark_dark(0 if muted else v)
             (self.add_css_class if muted else self.remove_css_class)("is-muted")
+            self.muted = muted
             if hasattr(self.source, "icon_muted"):
                 set_glyph(self.icon, self.source.icon_muted if muted else self.source.icon)
         self.plugin.background(get, then=show)
@@ -588,8 +646,8 @@ class BtSquare(Square):
         lvl = d["battery"]
         low = lvl <= 20
         big = Gtk.Box(spacing=2)
-        big.append(ui.label(str(lvl), "k-typo", "k-red" if low else "", valign=Gtk.Align.BASELINE))
-        big.append(ui.label("%", "k-typo-unit", "k-red" if low else "", valign=Gtk.Align.BASELINE))
+        big.append(ui.label(str(lvl), "k-typo", *(["k-red"] if low else []), valign=Gtk.Align.BASELINE))
+        big.append(ui.label("%", "k-typo-unit", *(["k-red"] if low else []), valign=Gtk.Align.BASELINE))
         self.content.append(big)
         bar = ui.progress(lvl / 100, "red" if low else "green")
         self.content.append(bar)

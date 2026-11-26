@@ -2,6 +2,12 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.7.0 -- 2026-11-26
+
+- **Volume and brightness hold liquid.** Each is a glass pill filled to its level (white for volume, honey for brightness) with a slowly moving surface that sloshes when the level changes; it moves only while the panel shows. Drag, scroll or h / l as before; muted, the liquid turns grey and still. No dark box behind them any more.
+- **Notifications as one pill of three**: Active (they show, with sound), Silent (they show, no sound) and Do not disturb (nothing shows), from a `notifications` tile with `levels` in config.toml; the chosen one grows and names itself. Without that tile, quiet stays a circle.
+- Hotspot moves to the bottom row, beside the phone link and the theme.
+
 ## v0.6.2 -- 2026-11-26
 
 - Volume and brightness are slim standing pills, the level a rounded pill inside them (they were wide and round); the panel is a little narrower.
