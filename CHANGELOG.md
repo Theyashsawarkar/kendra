@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.6.2 -- 2026-11-26
+
+- Volume and brightness are slim standing pills, the level a rounded pill inside them (they were wide and round); the panel is a little narrower.
+
 ## v0.6.1 -- 2026-11-26
 
 - A smaller panel: about 15% narrower and shorter, with smaller circles, numbers and gaps.

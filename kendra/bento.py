@@ -172,6 +172,9 @@ class Tall(Gtk.Overlay, Hoverable):
         self.plugin, self.source, self.name, self.busy, self.pending = plugin, source, name, False, None
         self.add_css_class("k-tall")
         self.add_css_class(css)
+        # slim, standing pills (a wide one looked like a tomato)
+        self.set_size_request(52, -1)
+        self.set_halign(Gtk.Align.CENTER)
         self.set_overflow(Gtk.Overflow.HIDDEN)
         self.fill = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.fill.set_draw_func(self.draw_fill)
@@ -206,11 +209,26 @@ class Tall(Gtk.Overlay, Hoverable):
         self.scale.grab_focus()
 
     def draw_fill(self, area, cr, w, h):
+        """The level as a pill inside the pill: inset, round at both ends."""
         v = self.scale.get_value() / 100
-        if v <= 0:
+        pad = 4
+        iw = w - 2 * pad
+        r = iw / 2
+        full = h - 2 * pad
+        fh = max(iw, full * v) if v > 0 else 0
+        if fh <= 0:
             return
-        cr.set_source_rgba(*rgba(area))
-        cr.rectangle(0, h * (1 - v), w, h * v)
+        x, y = pad, pad + full - fh
+        cr.new_sub_path()
+        cr.arc(x + r, y + r, r, math.pi, 0)
+        cr.arc(x + r, y + fh - r, r, 0, math.pi)
+        cr.close_path()
+        red, g, b, a = rgba(area)
+        import cairo  # noqa: PLC0415
+        grad = cairo.LinearGradient(0, y, 0, y + fh)
+        grad.add_color_stop_rgba(0, red, g, b, a)
+        grad.add_color_stop_rgba(1, red * 0.86, g * 0.86, b * 0.86, a)
+        cr.set_source(grad)
         cr.fill()
 
     def words(self):
