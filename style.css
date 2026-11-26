@@ -1,113 +1,112 @@
-/* kendra: quick settings, in Vyom's Spatial look: glass tiles, round icons that
-   fill with their colour when on, brighter glass where you are. Colours come
-   from Vyom's style.css (@accent, @green...). */
+/* kendra (2026-11-26): the bento. Squares for what you pick from (Wi-Fi,
+   Bluetooth), tall capsules for volume and brightness, segments for what you
+   choose one of (Jyoti, power mode), circles for plain switches, the
+   wallpaper as a pill. Spatial: graphite glass, very round, colour only for
+   meaning (a switch that's on is filled in its own colour), where you are
+   is a light rim. Colours come from Vyom's style.css (@accent, @green...). */
 .plugin-kendra .qs { padding: 14px 14px 0 14px; }
-.qs-header { margin-bottom: 12px; }
-.qs-avatar {
-  min-width: 34px; min-height: 34px; border-radius: 17px;
-  background: @accent; color: @crust; font-weight: 800; font-size: 15px;
-}
+
+/* the header: your initial inside the battery ring, the greeting, lock, power */
+.qs-header { padding: 5px 6px 5px 5px; border-radius: 999px; background: alpha(white, 0.06);
+  box-shadow: inset 0 1px alpha(white, 0.10); }
+.k-ring { color: @accent; }
 .qs-hello { font-weight: 700; font-size: 13.5px; }
-/* Lock and power: round, apart from the tiles; power in red (it leads to the
-   final actions). */
+.k-meta { color: @subtext0; font-size: 11.5px; }
 button.qs-round {
-  min-width: 34px; min-height: 34px; padding: 0; border-radius: 999px;
-  background: alpha(white, 0.08); border: none;
-  font-family: "JetBrainsMono Nerd Font"; font-size: 15px; color: @subtext1; box-shadow: none;
+  min-width: 38px; min-height: 38px; padding: 0; border-radius: 999px;
+  background: alpha(white, 0.08); border: 1px solid alpha(white, 0.10);
+  font-family: "JetBrainsMono Nerd Font"; font-size: 15px; color: @subtext1; box-shadow: inset 0 1px alpha(white, 0.10);
 }
-button.qs-round.power { margin-left: 6px; color: @red; background: alpha(@red, 0.16); }
-button.qs-round:hover { background: alpha(white, 0.12); color: @text; }
+button.qs-round.power { margin-left: 6px; color: @red; background: alpha(@red, 0.14); border-color: alpha(@red, 0.25); }
+button.qs-round:hover { background: alpha(white, 0.14); color: @text; }
 button.qs-round.power:hover { background: alpha(@red, 0.24); color: @red; }
-button.qs-round.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 2px; }
 
-button.qs-tile {
-  padding: 8px 10px 8px 9px; border-radius: 20px; min-height: 38px;
-  background: alpha(white, 0.06); border: none;
-  box-shadow: inset 0 1px 0 alpha(white, 0.05); color: @text; outline: none;
-}
-button.qs-tile:hover { background: alpha(white, 0.10); }
-/* Where you are: a light rim you can't miss, on brighter glass. */
-button.qs-tile.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; background: alpha(@accent, 0.14); }
-/* The icon in a circle: faint when off, filled in the tile's colour when on. */
-.qs-icon {
-  font-family: "JetBrainsMono Nerd Font"; font-size: 16px; color: @overlay2;
-  min-width: 32px; min-height: 32px; border-radius: 999px; background: alpha(white, 0.08);
-}
-.qs-title { font-weight: 650; font-size: 12.5px; }
-.qs-sub { color: @overlay2; font-size: 11.5px; }
-.qs-state { font-size: 12px; font-weight: 700; color: @overlay1; }
-.qs-more {
-  font-family: "JetBrainsMono Nerd Font"; color: @overlay1; font-size: 15px;
-  min-width: 26px; min-height: 26px; border-radius: 999px;
-}
-/* The arrow is a button of its own (it opens the details): it lights up under the pointer. */
-.qs-more:hover { background: alpha(white, 0.12); color: @text; }
-button.qs-tile.on .qs-sub { color: @subtext1; }
-button.qs-tile.on { background: alpha(white, 0.15); box-shadow: inset 0 1px 0 alpha(white, 0.12); }
-button.qs-tile.on.q-sky .qs-icon    { background: @sky; color: @crust; }
-button.qs-tile.on.q-blue .qs-icon   { background: @blue; color: @crust; }
-button.qs-tile.on.q-teal .qs-icon   { background: @teal; color: @crust; }
-button.qs-tile.on.q-red .qs-icon    { background: @red; color: @crust; }
-button.qs-tile.on.q-peach .qs-icon  { background: @peach; color: @crust; }
-button.qs-tile.on.q-mauve .qs-icon  { background: @mauve; color: @crust; }
-button.qs-tile.on.q-yellow .qs-icon { background: @yellow; color: @crust; }
-button.qs-tile.on.q-green .qs-icon  { background: @green; color: @crust; }
-button.qs-tile.on.q-sky .qs-state    { color: @sky; }
-button.qs-tile.on.q-blue .qs-state   { color: @blue; }
-button.qs-tile.on.q-teal .qs-state   { color: @teal; }
-button.qs-tile.on.q-red .qs-state    { color: @red; }
-button.qs-tile.on.q-peach .qs-state  { color: @peach; }
-button.qs-tile.on.q-mauve .qs-state  { color: @mauve; }
-button.qs-tile.on.q-yellow .qs-state { color: @yellow; }
-button.qs-tile.on.q-green .qs-state  { color: @green; }
+/* where you are: a light rim, on everything */
+.k-bento .sel, button.qs-round.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 2px; }
+.k-bento > * { min-height: 54px; }
 
-/* A tile's levels (Jyoti: Akhaṇḍa / Nandādīpa), under the tiles while it's on:
-   rounded buttons, the current one filled in the tile's colour. */
-.qs-levels {
-  margin-top: 10px; padding: 5px 5px 5px 14px; border-radius: 999px;
-  background: alpha(white, 0.06); border: none;
+/* circles: a plain on / off switch, filled in its colour when on */
+button.k-circle {
+  padding: 0; border-radius: 999px; min-width: 0; min-height: 0;
+  background: alpha(white, 0.08); border: 1px solid alpha(white, 0.12);
+  box-shadow: inset 0 1px alpha(white, 0.12); color: @subtext1;
 }
-.qs-level-name { color: @overlay2; font-size: 12px; }
-button.qs-level {
-  min-height: 28px; padding: 0 14px; border-radius: 999px; box-shadow: none;
-  background: alpha(white, 0.08); border: none;
-  color: @subtext1; font-size: 12px; font-weight: 650;
-}
-button.qs-level:hover { background: alpha(white, 0.12); color: @text; }
-button.qs-level.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; }
-.qs-levels.q-sky button.qs-level.on    { background: @sky; color: @crust; border-color: @sky; }
-.qs-levels.q-blue button.qs-level.on   { background: @blue; color: @crust; border-color: @blue; }
-.qs-levels.q-teal button.qs-level.on   { background: @teal; color: @crust; border-color: @teal; }
-.qs-levels.q-red button.qs-level.on    { background: @red; color: @crust; border-color: @red; }
-.qs-levels.q-peach button.qs-level.on  { background: @peach; color: @crust; border-color: @peach; }
-.qs-levels.q-mauve button.qs-level.on  { background: @mauve; color: @crust; border-color: @mauve; }
-.qs-levels.q-yellow button.qs-level.on { background: @yellow; color: @crust; border-color: @yellow; }
-.qs-levels.q-green button.qs-level.on  { background: @green; color: @crust; border-color: @green; }
+button.k-circle:hover { background: alpha(white, 0.14); }
+button.k-circle.on { border-color: transparent; color: @crust; }
+button.k-circle.on.q-sky { background: @sky; }
+button.k-circle.on.q-blue { background: @blue; }
+button.k-circle.on.q-teal { background: @teal; }
+button.k-circle.on.q-red { background: @red; }
+button.k-circle.on.q-peach { background: @peach; }
+button.k-circle.on.q-mauve { background: @mauve; }
+button.k-circle.on.q-yellow { background: @yellow; }
+button.k-circle.on.q-green { background: @green; }
+.k-glyph { color: inherit; }
 
-/* Sliders: the name (and output device) over a thick track, a big thumb, the value. */
-.qs-sliders { margin: 14px 2px 4px 2px; }
-button.qs-slider-icon {
-  min-width: 32px; min-height: 32px; padding: 0; border-radius: 999px;
-  background: alpha(white, 0.08); border: none; box-shadow: none;
-  font-family: "JetBrainsMono Nerd Font"; font-size: 15px;
-}
-button.qs-slider-icon:hover { background: alpha(white, 0.12); }
-button.qs-slider-icon.sel { outline: 2px solid alpha(@accent, 0.9); outline-offset: 1px; }
-.qs-slider.volume button.qs-slider-icon { color: @blue; }
-.qs-slider.brightness button.qs-slider-icon { color: @yellow; }
-.qs-slider.is-muted button.qs-slider-icon { color: @red; }
-.qs-slider-name { color: @overlay2; font-size: 12px; }
-.qs-value { color: @text; font-weight: 700; font-family: "JetBrainsMono Nerd Font"; font-size: 12.5px; }
-.qs-value.muted { color: @red; }
-.qs-slider scale { padding: 6px 0; }
-.qs-slider scale trough { min-height: 12px; border-radius: 999px; background: alpha(white, 0.12); }
-.qs-slider scale highlight { min-height: 12px; min-width: 12px; border-radius: 999px; }
-.qs-slider.volume scale highlight { background: @blue; }
-.qs-slider.brightness scale highlight { background: @yellow; }
-.qs-slider.is-muted scale highlight { background: @overlay0; }
-.qs-slider scale slider { min-width: 22px; min-height: 22px; margin: -5px; border-radius: 999px; background: @text;
-  box-shadow: 0 1px 3px alpha(black, 0.4); }
-.qs-slider scale.sel slider { box-shadow: 0 0 0 3px alpha(@accent, 0.9); }
-/* GTK's default highlight has a -1px margin: with no border it reports a
-   negative size (a warning), so it gets none. */
-.plugin-kendra scale highlight { margin: 0; }
+/* the squares */
+.k-square { padding: 10px 10px 10px 12px; border-radius: 30px;
+  background: alpha(white, 0.06); border: 1px solid alpha(white, 0.09); box-shadow: inset 0 1px alpha(white, 0.10); }
+.k-square.on { background-image: linear-gradient(160deg, alpha(white, 0.10), alpha(white, 0.03)); }
+button.k-go { min-width: 32px; min-height: 32px; padding: 0; border-radius: 999px; border: none; box-shadow: none;
+  background: alpha(white, 0.06); color: @overlay1; }
+button.k-go:hover { background: alpha(white, 0.14); color: @text; }
+button.k-more { min-height: 26px; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 650;
+  background: alpha(white, 0.07); border: 1px solid alpha(white, 0.12); color: @subtext1; box-shadow: none; margin-right: 6px; }
+button.k-more:hover { background: alpha(white, 0.14); color: @text; }
+.k-sq-name { color: @subtext0; font-size: 12px; }
+.k-big { font-size: 27px; font-weight: 700; letter-spacing: -0.5px; font-feature-settings: "tnum"; }
+.k-unit { color: @subtext0; font-size: 11.5px; }
+.k-up { color: @mauve; font-family: "JetBrainsMono Nerd Font"; font-size: 11.5px; }
+.k-axis { color: @overlay0; font-family: "JetBrainsMono Nerd Font"; font-size: 10px; }
+.k-axis-down { color: @sky; }
+.k-axis-up { color: @mauve; }
+.k-quiet { color: @subtext0; font-size: 12px; }
+/* Bluetooth, B4: big light numbers, one split line, the case quieter */
+.k-typo { font-size: 32px; font-weight: 300; letter-spacing: -1px; font-feature-settings: "tnum"; }
+.k-typo-unit { font-size: 15px; color: @subtext0; }
+.k-typo-name { color: @overlay1; font-size: 11px; font-weight: 600; }
+.k-sep { min-width: 1px; min-height: 30px; background: alpha(white, 0.12); margin: 4px 0; }
+.k-duo progressbar trough, .k-case progressbar trough, .k-square progressbar trough {
+  min-height: 6px; border-radius: 999px; background: alpha(white, 0.09); }
+.k-duo progressbar progress, .k-case progressbar progress, .k-square progressbar progress { min-height: 6px; border-radius: 999px; }
+.k-case-v { font-size: 12px; font-weight: 650; }
+.k-charging { color: @green; font-size: 11.5px; font-weight: 650; }
+.k-lowtag { color: @red; font-size: 11px; font-weight: 700; padding: 0 8px; border-radius: 999px;
+  background: alpha(@red, 0.12); border: 1px solid alpha(@red, 0.3); }
+.k-red, .k-red-note { color: @red; }
+.k-red-note { font-size: 11.5px; font-weight: 650; }
+
+/* segments: icons, the chosen one a pill in its colour with its name */
+.k-seg { padding: 6px; border-radius: 999px; background: alpha(white, 0.06);
+  border: 1px solid alpha(white, 0.09); box-shadow: inset 0 1px alpha(white, 0.10); }
+button.k-opt { min-width: 38px; padding: 0 8px; border-radius: 999px; border: none; box-shadow: none;
+  background: transparent; color: @subtext0; }
+button.k-opt:hover { background: alpha(white, 0.08); }
+button.k-opt.on { color: @crust; }
+button.k-opt.on.q-gray { background: alpha(white, 0.16); color: @text; }
+button.k-opt.on.q-sky { background: @sky; }
+button.k-opt.on.q-peach { background: @peach; }
+button.k-opt.on.q-yellow { background: @yellow; }
+button.k-opt.on.q-green { background: @green; }
+.k-opt-name { font-weight: 650; font-size: 12.5px; }
+
+/* tall capsules: a fill from the bottom, the value on top, the icon at the foot */
+.k-tall { border-radius: 999px; background: alpha(black, 0.26); border: 1px solid alpha(white, 0.07); }
+.k-tall > drawingarea { color: alpha(@text, 0.92); }
+.k-tall.brightness > drawingarea { color: alpha(@yellow, 0.92); }
+.k-tall.is-muted > drawingarea { color: alpha(@overlay1, 0.6); }
+.k-tall-value { margin-top: 14px; font-weight: 700; font-size: 12.5px; color: @subtext1; font-feature-settings: "tnum"; }
+.k-tall.full .k-tall-value { color: @crust; }
+.k-tall-icon { margin-bottom: 14px; color: @crust; }
+.k-tall.is-muted .k-tall-icon { color: @red; }
+
+/* the bottom row: quiet, theme, and the wallpaper you're on */
+.k-bottom { padding: 6px; border-radius: 999px; background: alpha(black, 0.18); border: 1px solid alpha(white, 0.06); }
+button.k-wall { padding: 0; border-radius: 999px; border: 1px solid alpha(white, 0.18); background: transparent;
+  box-shadow: inset 0 1px alpha(white, 0.14); min-height: 50px; }
+.k-wall-shade { background-image: linear-gradient(to right, alpha(@crust, 0.7), alpha(@crust, 0.1)); }
+.k-wall-name { color: @text; font-weight: 650; font-size: 12.5px; }
+.k-wall-refresh { min-width: 32px; min-height: 32px; border-radius: 999px; background: alpha(@crust, 0.55); color: @text; }
+
+/* the line that says what's under the pointer */
+.k-say { padding: 7px 14px; border-radius: 999px; background: alpha(white, 0.04); color: @subtext0; font-size: 12px; margin-bottom: 2px; }

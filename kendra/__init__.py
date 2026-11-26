@@ -4,12 +4,16 @@ Toggles, sliders, battery and session buttons in a panel under the bar's
 top-right corner. Opens with the last known state, then every tile
 refreshes in a background thread, so slow tools never hold it up.
 """
-from gi.repository import Gdk, GLib, Gtk, Pango
+import time
 
-from vyom import Plugin as Base
+from gi.repository import GLib, Gtk, Pango
+
 from vyom import Hint, ui
+from vyom import Plugin as Base
 
-from . import system, vim
+from vyom import util
+
+from . import bento, system, vim
 
 # KEYBINDS (generated from kendra/vim.py by scripts/keybinds.py; don't edit by hand)
 # keybind: Vyom/quick settings:normal | h | Move left in the tiles (on a slider: lower it by 5)
@@ -36,239 +40,42 @@ from . import system, vim
 
 DEFAULT_TILES = ["wifi", "bluetooth", "hotspot", "dnd", "jyoti", "theme", "wallpaper", "power-profile"]
 # A tile's details in another Vyom tool, when it's installed and the tile has no `open` command.
-DETAILS = {"wifi": ("tarang", []), "bluetooth": ("setu", []), "hotspot": ("tarang", ["hotspot"])}
-CHEVRON = "\U000f0142"
+DETAILS = {"wifi": ("tarang", []), "bluetooth": ("setu", []), "hotspot": ("tarang", ["hotspot"]),
+           "power-profile": ("urja", [])}
+# Where each part sits in the bento (column, row, width, height), 4 columns.
+WIFI, VOLUME, BRIGHT = (0, 0, 2, 3), (2, 0, 1, 3), (3, 0, 1, 3)
+JYOTI, BT, POWER = (0, 3, 2, 1), (2, 3, 2, 3), (0, 4, 2, 1)
+SMALL_ROW, BOTTOM = 5, 6
+SMALL = ("hotspot", "ekatva")          # circles under Jyoti and power
+QUIET = ("dnd", "theme")                # circles in the bottom row, before the wallpaper
+FLAME = "\U000f0238"
+OFF = "\U000f073a"
 
 
-def sentence(text):
-    """ "screen stays on" -> "Screen stays on" (names like an SSID are left alone)."""
-    return text[:1].upper() + text[1:] if text else text
+def ago(t):
+    s = max(0, time.time() - t)
+    if s < 90:
+        return "just now"
+    for size, unit in ((86400, "d"), (3600, "h"), (60, "min")):
+        if s >= size:
+            return f"{int(s // size)} {unit}"
+    return "just now"
 
 
-class TileButton(Gtk.Button):
-    """A toggle: a rounded icon square (filled in the tile's colour when on),
-    its name and what it's on, and "On" / "Off" or a chevron for details."""
-
-    def __init__(self, plugin, tile):
-        super().__init__()
-        self.plugin, self.tile, self.on = plugin, tile, None
-        self.add_css_class("qs-tile")
-        self.add_css_class(f"q-{tile.color}")
-        self.internal = None if tile.open_cmd else DETAILS.get(tile.key)
-        if self.internal and self.internal[0] not in getattr(plugin.vyom, "plugins", {}):
-            self.internal = None
-        box = Gtk.Box(spacing=9)
-        if tile.icon_svg:
-            # A line drawing, painted in the icon's CSS colour (paint_icon).
-            # hexpand/vexpand=False on the square: the image expands to stay
-            # centred in it, and GTK passed that up, so the square took the
-            # tile's spare width (the title sat right of every other tile's)
-            # and, when the panel shrank, its spare height (a tall tile row).
-            icon = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=False, vexpand=False)
-            icon.add_css_class("qs-icon")
-            self.svg_img = Gtk.Image(pixel_size=18, hexpand=True, vexpand=True,
-                                     halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-            icon.append(self.svg_img)
-            self.svg_box, self.svg_color = icon, None
-            GLib.idle_add(lambda: (self.paint_icon(), False)[1])
-        else:
-            icon = ui.label(tile.icon, "qs-icon", halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-            self.svg_img = None
-        box.append(icon)
-        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER, hexpand=True)
-        text.append(ui.label(tile.title, "qs-title", xalign=0))
-        self.sub = ui.label("…", "qs-sub", xalign=0, ellipsize=Pango.EllipsizeMode.END, max_width_chars=13)
-        text.append(self.sub)
-        box.append(text)
-        self.state = ui.label("", "qs-state", valign=Gtk.Align.CENTER)
-        self.state.set_visible(False)
-        box.append(self.state)
-        if self.has_details():
-            # The arrow is its own target: a click on it opens the details
-            # (tarang, setu…); a click anywhere else on the tile toggles it.
-            more = ui.label(CHEVRON, "qs-more", valign=Gtk.Align.CENTER)
-            more.set_tooltip_text("Open details")
-            arrow = Gtk.GestureClick(button=1)
-            arrow.connect("pressed", self.arrow_pressed)
-            arrow.connect("released", lambda *_: self.open_details())
-            more.add_controller(arrow)
-            box.append(more)
-            click = Gtk.GestureClick(button=3)
-            click.connect("pressed", lambda *_: self.open_details())
-            self.add_controller(click)
-            self.set_tooltip_text("Click or Enter: toggle · the arrow, right click or o: details")
-        self.set_child(box)
-        self.connect("clicked", lambda *_: self.activate_tile())
-
-    @staticmethod
-    def arrow_pressed(gesture, *_):
-        # Claim the press so the tile's own click (toggle) never sees it.
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-
-    def has_details(self):
-        return bool(self.tile.open_cmd or self.internal)
-
-    def show_state(self, on, sub):
-        self.on = on
-        self.sub.set_label(sub if self.tile.key in DETAILS else sentence(sub))
-        (self.add_css_class if on else self.remove_css_class)("on")
-        # On / Off in words, so the tint isn't the only sign. A tile with details
-        # names what it's on instead (its subtitle says "Off" when it's off).
-        if self.svg_img is not None:
-            GLib.idle_add(lambda: (self.paint_icon(), False)[1])
-        row = getattr(self, "level_row", None)
-        if row is not None:
-            row.update(on, self.tile.level)
-        word = on is not None and self.tile.shows_state and not self.has_details()
-        self.state.set_visible(word)
-        if word:
-            self.state.set_label("On" if on else "Off")
-
-    def paint_icon(self):
-        """The tile's line drawing, in the colour its CSS gives the icon now."""
-        c = self.svg_box.get_color()
-        color = f"#{round(c.red * 255):02x}{round(c.green * 255):02x}{round(c.blue * 255):02x}"
-        if color == self.svg_color:
-            return
-        self.svg_color = color
-        px = 18 * max(1, self.get_scale_factor())
-        svg = self.tile.icon_svg.replace("currentColor", color).replace("<svg ", f'<svg width="{px}" height="{px}" ', 1)
-        self.svg_img.set_from_paintable(Gdk.Texture.new_from_bytes(GLib.Bytes.new(svg.encode())))
-
-    def activate_tile(self):
-        want = not self.on if self.on is not None else True
-        if self.on is not None:
-            self.show_state(want, "…")
-        self.plugin.background(lambda: self.tile.toggle(want), then=lambda _r: self.refresh())
-
-    def open_details(self):
-        if self.tile.open_cmd:
-            self.plugin.close()
-            system.spawn(self.tile.open_cmd)
-            return True
-        if self.internal:
-            name, args = self.internal
-            GLib.idle_add(lambda: (self.plugin.vyom.open(name, list(args)), False)[1])
-            return True
-        return False
-
-    def refresh(self):
-        self.plugin.background(self.tile.status, then=lambda r: self.show_state(*r) if isinstance(r, tuple) else None)
-
-
-class LevelRow(Gtk.Box):
-    """The levels of a tile that has them (config `levels`), shown under the
-    tiles while it's on: its name, then one button per level, the current
-    one filled in the tile's colour. A click (or Enter) switches to it."""
-
-    def __init__(self, plugin, button):
-        super().__init__(spacing=6)
-        self.plugin, self.button, self.tile = plugin, button, button.tile
-        self.add_css_class("qs-levels")
-        self.add_css_class(f"q-{self.tile.color}")
-        self.append(ui.label(self.tile.title, "qs-level-name", valign=Gtk.Align.CENTER, hexpand=True, xalign=0))
-        self.buttons = {}
-        for lv in self.tile.levels:
-            b = Gtk.Button(label=lv["name"], valign=Gtk.Align.CENTER,
-                           tooltip_text=f"Switch {self.tile.title} to {lv['name']}")
-            b.add_css_class("qs-level")
-            b.connect("clicked", lambda _b, n=lv["name"]: self.pick(n))
-            self.buttons[lv["name"]] = b
-            self.append(b)
-        self.set_visible(False)
-
-    def update(self, on, level):
-        was = self.get_visible()
-        self.set_visible(bool(on))
-        if was and not on:
-            # The panel keeps its height when content goes away; ask it to
-            # fit again (as Vyom does leaving fullscreen), so no empty band.
-            win = self.get_root()
-            if win is not None and not getattr(win, "full", False) and hasattr(win, "set_default_size"):
-                win.set_default_size(1, 1)
-        for name, b in self.buttons.items():
-            (b.add_css_class if name == level else b.remove_css_class)("on")
-
-    def pick(self, name):
-        if name == self.tile.level:
-            return
-        self.update(True, name)          # at once; the status check confirms it
-        self.plugin.background(lambda: self.tile.set_level(name), then=lambda _r: self.button.refresh())
-
-
-class SliderRow(Gtk.Box):
-    """Icon button (mute), the name over a thick track, the value in words."""
-
-    def __init__(self, plugin, source, css, name):
-        super().__init__(spacing=12)
-        self.plugin, self.source, self.busy, self.pending = plugin, source, False, None
-        self.name = name
-        self.add_css_class("qs-slider")
-        self.add_css_class(css)
-        self.icon = Gtk.Button(label=source.icon, valign=Gtk.Align.CENTER)
-        self.icon.add_css_class("qs-slider-icon")
-        if hasattr(source, "toggle_mute"):
-            self.icon.connect("clicked", lambda *_: self.toggle_mute())
-            self.icon.set_tooltip_text("Mute / unmute (m)")
-        else:
-            self.icon.set_can_focus(False)
-            self.icon.set_can_target(False)
-        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, hexpand=True, valign=Gtk.Align.CENTER)
-        self.title = ui.label(name, "qs-slider-name", xalign=0, ellipsize=Pango.EllipsizeMode.END)
-        col.append(self.title)
-        self.scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
-        self.scale.set_hexpand(True)
-        self.scale.set_draw_value(False)
-        self.scale.connect("value-changed", self.changed)
-        col.append(self.scale)
-        self.value = ui.label("", "qs-value", width_chars=6, xalign=1, valign=Gtk.Align.CENTER)
-        for w in (self.icon, col, self.value):
-            self.append(w)
-
-    def toggle_mute(self):
-        self.plugin.background(self.source.toggle_mute, then=lambda _r: self.refresh())
-
-    def changed(self, scale):
-        v = int(scale.get_value())
-        self.value.set_label(f"{v}%")
-        self.value.remove_css_class("muted")
-        if self.busy:
-            return
-        if self.pending:  # coalesce a drag into one command every 80 ms
-            GLib.source_remove(self.pending)
-        self.pending = GLib.timeout_add(80, self.apply, v)
-
-    def apply(self, v):
-        self.pending = None
-        self.plugin.background(lambda: self.source.set(v))
-        return False
-
-    def refresh(self):
-        def get():
-            v = self.source.get()
-            dev = self.source.device() if hasattr(self.source, "device") else ""
-            return v, dev
-
-        def show(r):
-            if not isinstance(r, tuple):
-                return
-            (v, muted), dev = r
-            self.busy = True
-            self.scale.set_value(v)
-            self.busy = False
-            self.title.set_label(f"{self.name} · {dev}" if dev else self.name)
-            self.value.set_label("Muted" if muted else f"{v}%")
-            (self.value.add_css_class if muted else self.value.remove_css_class)("muted")
-            (self.add_css_class if muted else self.remove_css_class)("is-muted")
-            if hasattr(self.source, "icon_muted"):
-                self.icon.set_label(self.source.icon_muted if muted else self.source.icon)
-        self.plugin.background(get, then=show)
+def setu_mods():
+    """setu's Bluetooth helpers when setu is installed (Vyom puts every
+    plugin on the path): the buds' own batteries. None without it."""
+    try:
+        from setu import bluez as sb, fastpair  # noqa: PLC0415
+        return sb, fastpair
+    except Exception:     # noqa: BLE001  (not installed, or an older setu)
+        return None
 
 
 class Plugin(Base):
     name, title, icon, color = "kendra", "Quick settings", "\U000f0493", "mauve"
     layout = "card"
-    width = 360
+    width = 352
     anchor = ("top", "right")
     modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
     start_mode = "normal"
@@ -280,18 +87,24 @@ class Plugin(Base):
         super().__init__(vyom, conf)
         self.margins = {"top": int(self.conf.get("margin_top", 6)), "right": int(self.conf.get("margin_right", 8))}
         self.card = None
-        self.tiles, self.sliders = [], []
+        self.parts, self.sliders, self.focusables = [], [], []
+        self.wifi = self.bt = self.jyoti = self.power = self.wall = None
+        self.traffic = system.Traffic()
+        self.first_seen = {}
+        self.fp = None
+        self.sampling = None
 
+    # ------------------------------------------------------------ building
     def build_card(self):
         if self.card is None:
             self.card = self._build()
         self.refresh_all()
-        if self.tiles:   # once it's in the window (grabbing before does nothing)
+        if self.focusables:
             GLib.idle_add(self.first_focus)
         return self.card
 
     def first_focus(self):
-        self.tiles[0].grab_focus()
+        self.focusables[0].grab_focus()
         # Where you are, drawn by us: a layer-shell panel isn't always an
         # "active" window, so GTK's :focus can't be relied on.
         if self.panel is not None and getattr(self, "watched_panel", None) is not self.panel:
@@ -302,54 +115,247 @@ class Plugin(Base):
 
     def mark_focus(self):
         focus = self.panel.get_focus() if self.panel is not None else None
-        levels = [b for r in getattr(self, "level_rows", []) for b in r.buttons.values()]
-        for w in self.tiles + levels + [s.scale for s in self.sliders] + [s.icon for s in self.sliders] + \
-                list(getattr(self, "session_buttons", [])):
-            (w.add_css_class if w is focus else w.remove_css_class)("sel")
+        for w in self.focusables + list(getattr(self, "session_buttons", [])):
+            # a slider's rim goes on its capsule, not on the bare scale
+            target = w.get_parent() if isinstance(w.get_parent(), bento.Tall) else w
+            (target.add_css_class if w is focus else target.remove_css_class)("sel")
+
+    def tile(self, key):
+        keys = self.conf.get("tiles", DEFAULT_TILES)
+        if key not in keys:
+            return None
+        t = system.make_tile(key, self.conf.get("tile", {}).get(key, {}))
+        return t if t.available() else None
 
     def _build(self):
-        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         root.add_css_class("qs")
         root.append(self._header())
-        grid = Gtk.Grid(column_spacing=8, row_spacing=8, column_homogeneous=True)
-        grid.add_css_class("qs-tiles")
-        for key in self.conf.get("tiles", DEFAULT_TILES):
-            tile = system.make_tile(key, self.conf.get("tile", {}).get(key, {}))
-            if not tile.available():
-                continue  # tool missing or no such hardware: no tile
-            b = TileButton(self, tile)
-            n = len(self.tiles)
-            grid.attach(b, n % 2, n // 2, 1, 1)
-            self.tiles.append(b)
+        grid = Gtk.Grid(column_spacing=10, row_spacing=10, column_homogeneous=True, row_homogeneous=True)
+        grid.add_css_class("k-bento")
+        def place(w, pos):
+            grid.attach(w, *pos)
+        keys = self.conf.get("tiles", DEFAULT_TILES)
+        t = self.tile("wifi")
+        if t:
+            if self.sampling is None:
+                self.traffic.dev = system.wifi_device()
+                self.traffic.sample()
+                self.sampling = GLib.timeout_add_seconds(self.traffic.step, self.sample)
+            self.wifi = bento.WifiSquare(self, t, self.traffic)
+            place(self.wifi, WIFI)
+            self.parts.append(self.wifi)
+            self.focusables.append(self.wifi.toggle)
+        srcs = [(src, css, name) for src, css, name in ((system.Volume(), "volume", "Volume"),
+                                                         (system.Brightness(), "brightness", "Brightness"))
+                if src.available()]
+        if self.wifi is not None and len(srcs) < 2:
+            # one slider (no sound card, or no backlight): Wi-Fi takes the room
+            grid.remove(self.wifi)
+            place(self.wifi, (0, 0, 4 - len(srcs), 3))
+        for (src, css, name), pos in zip(srcs, (VOLUME, BRIGHT)[2 - len(srcs):]):
+            if True:
+                tall = bento.Tall(self, src, css, name)
+                place(tall, pos)
+                self.sliders.append(tall)
+                self.focusables.append(tall.scale)
+        t = self.tile("jyoti") or self.tile("jagaran") or self.tile("caffeine")
+        if t:
+            colors = ["sky", "peach", "yellow", "green"]
+            opts = [("off", "Off", OFF, "gray")] + [(lv["name"], lv["name"], FLAME, colors[i % 4])
+                                                     for i, lv in enumerate(t.levels)]
+            if not t.levels:
+                opts.append(("on", "On", FLAME, "peach"))
+            self.jyoti = bento.Segments(self, t.title, opts, lambda k, t=t: self.pick_jyoti(t, k))
+            self.jyoti.tile = t
+            place(self.jyoti, JYOTI)
+            self.focusables += list(self.jyoti.buttons.values())
+        t = self.tile("bluetooth")
+        if t:
+            self.bt = bento.BtSquare(self, t)
+            place(self.bt, BT)
+            self.parts.append(self.bt)
+            self.focusables.append(self.bt.toggle)
+        if "power-profile" in keys:
+            profiles, _cur = system.power_profiles()
+            if profiles:
+                opts = [(pid, name, glyph, "green") for pid, name, glyph in profiles]
+                self.power = bento.Segments(self, "Power mode", opts, self.pick_power,
+                                            open_fn=lambda: self.open_details("power-profile", None))
+                place(self.power, POWER)
+                self.focusables += list(self.power.buttons.values())
+        # The small circles: the hotspot and the phone first, then any other
+        # tile you listed that has no place of its own.
+        known = {"wifi", "bluetooth", "jyoti", "jagaran", "caffeine", "power-profile", "wallpaper", *QUIET}
+        small = [k for k in SMALL if k in keys] + [k for k in keys if k not in known and k not in SMALL]
+        col, extra = 0, []
+        for k in small:
+            t = self.tile(k)
+            if not t:
+                continue
+            c = bento.Circle(self, t)
+            if col < 2:
+                grid.attach(c, col, SMALL_ROW, 1, 1)
+            else:   # more than two: they join the bottom row
+                extra.append(c)
+            col += 1
+            self.parts.append(c)
+            self.focusables.append(c)
+        bottom = Gtk.Box(spacing=8)
+        bottom.add_css_class("k-bottom")
+        for k in QUIET:
+            t = self.tile(k)
+            if t:
+                c = bento.Circle(self, t, size=50)
+                bottom.append(c)
+                self.parts.append(c)
+                self.focusables.append(c)
+        for c in extra:
+            c.set_size_request(50, 50)
+            bottom.append(c)
+        t = self.tile("wallpaper")
+        if t:
+            self.wall = bento.WallpaperPill(self, t)
+            bottom.append(self.wall)
+            self.focusables.append(self.wall)
+        if bottom.get_first_child() is not None:
+            grid.attach(bottom, 0, BOTTOM, 4, 1)
         root.append(grid)
-        # Tiles with levels (Jyoti: Akhaṇḍa / Nandādīpa) get a row to pick one,
-        # shown while the tile is on.
-        self.level_rows = []
-        for b in self.tiles:
-            if b.tile.levels:
-                b.level_row = LevelRow(self, b)
-                root.append(b.level_row)
-                self.level_rows.append(b.level_row)
-        sliders = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        sliders.add_css_class("qs-sliders")
-        for src, css, name in ((system.Volume(), "volume", "Volume"), (system.Brightness(), "brightness", "Brightness")):
-            if src.available():
-                row = SliderRow(self, src, css, name)
-                sliders.append(row)
-                self.sliders.append(row)
-        root.append(sliders)
+        self.said = ui.label("", "k-say", xalign=0, ellipsize=Pango.EllipsizeMode.END, use_markup=True)
+        root.append(self.said)
         # The keys are in Vyom's footer (a modal card has one).
         return root
+
+    def say(self, markup):
+        if getattr(self, "said", None) is not None:
+            self.said.set_markup(markup)
+
+    def sample(self):
+        self.traffic.sample()
+        if self.wifi is not None and self.panel is not None and self.panel.get_visible():
+            self.wifi.update_speed()
+        return True
+
+    def opened(self, args):
+        mods = setu_mods()
+        if mods and self.bt is not None:
+            if self.fp is None:
+                self.fp = mods[1].Scanner()
+            self.background(self.fp.start)
+
+    def closed(self):
+        if self.fp is not None:
+            self.background(self.fp.stop)
+
+    # ------------------------------------------------------------ actions
+    def open_details(self, key, open_cmd):
+        if open_cmd:
+            self.close()
+            system.spawn(open_cmd)
+            return True
+        internal = DETAILS.get(key)
+        if internal and internal[0] in getattr(self.vyom, "plugins", {}):
+            name, args = internal
+            GLib.idle_add(lambda: (self.vyom.open(name, list(args)), False)[1])
+            return True
+        self.set_status("no details for this one", "bad")
+        return False
+
+    def pick_jyoti(self, t, key):
+        def work():
+            on, _ = t.status()
+            if key == "off":
+                if on:
+                    t.toggle(False)
+            elif key == "on":
+                if not on:
+                    t.toggle(True)
+            else:
+                if not on and not t.levels:
+                    t.toggle(True)
+                t.set_level(key)
+        self.background(work, then=lambda _r: self.refresh_jyoti())
+
+    def pick_power(self, pid):
+        self.background(lambda: system.set_power_profile(pid), then=lambda _r: self.refresh_power())
+
+    # ------------------------------------------------------------ reading
+    def refresh_jyoti(self):
+        if self.jyoti is None:
+            return
+        t = self.jyoti.tile
+
+        def show(r):
+            if not isinstance(r, tuple):
+                return
+            on, _sub = r
+            self.jyoti.show("off" if not on else (t.level or ("on" if "on" in self.jyoti.buttons else None)))
+        self.background(t.status, then=show)
+
+    def refresh_power(self):
+        if self.power is None:
+            return
+        self.background(system.power_profiles, then=lambda r: self.power.show(r[1]) if isinstance(r, tuple) else None)
+
+    def refresh_wifi(self):
+        w = self.wifi
+
+        def get():
+            on, sub = w.tile.status()
+            pct, dbm = system.wifi_signal(self.traffic.dev) if on else (None, None)
+            return on, sub, pct, dbm
+        self.background(get, then=lambda r: w.show_state(*r) if isinstance(r, tuple) else None)
+
+    def refresh_bt(self):
+        b = self.bt
+
+        def get():
+            on, _sub = b.tile.status()
+            if not on:
+                return on, [], None
+            devs = system.bt_devices()
+            mods = setu_mods()
+            ubats = mods[0].upower_batteries() if mods else {}
+            readings = self.fp.read() if (self.fp is not None and mods) else {}
+            memo = util.load_state("setu-case", {})
+            recent = dict(util.load_state("setu-last-connected", {}))
+            now = time.time()
+            for d in devs:
+                self.first_seen.setdefault(d["mac"], now)
+                recent[d["mac"]] = max(recent.get(d["mac"], 0), self.first_seen[d["mac"]])
+                parts = {}
+                r = readings.get(d["name"])
+                if r:
+                    for k, p in r["parts"].items():
+                        parts[k.capitalize()] = {"level": p["level"], "charging": p["charging"]}
+                elif d["mac"] in ubats:
+                    for lab, pct in ubats[d["mac"]]:
+                        key = lab.split()[0].capitalize()
+                        parts[key] = {"level": pct, "charging": False}
+                case = parts.get("Case")
+                m = memo.get(d["mac"])
+                if (case is None or case.get("level") is None) and m and (parts.get("Left") or parts.get("Right")):
+                    parts["Case"] = {"level": m["level"], "charging": False,
+                                     "age": ago(m["at"])}
+                d["parts"] = parts
+                levels = [p["level"] for k, p in parts.items() if k != "Case" and p.get("level") is not None]
+                d["low"] = min(levels) if levels else d["battery"]
+            for mac in list(self.first_seen):
+                if mac not in {d["mac"] for d in devs}:
+                    del self.first_seen[mac]
+            return on, devs, system.pick_device(devs, recent)
+        self.background(get, then=lambda r: b.show_state(*r) if isinstance(r, tuple) else None)
 
     def _header(self):
         box = Gtk.Box(spacing=12)
         box.add_css_class("qs-header")
-        box.append(ui.label(system.user_name()[:1], "qs-avatar", valign=Gtk.Align.CENTER))
-        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, valign=Gtk.Align.CENTER, hexpand=True)
+        self.ring = bento.BatteryRing(system.user_name()[:1])
+        box.append(self.ring)
+        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, hexpand=True)
         self.hello = ui.label("", "qs-hello", xalign=0)
-        self.chip_box = Gtk.Box(spacing=6)
+        self.meta = ui.label("", "k-meta", xalign=0, ellipsize=Pango.EllipsizeMode.END)
         text.append(self.hello)
-        text.append(self.chip_box)
+        text.append(self.meta)
         box.append(text)
         # Lock and power, set apart from the tiles; power in red. Space l and Space p do the same.
         self.session, self.session_buttons = {}, []
@@ -383,32 +389,46 @@ class Plugin(Base):
 
     def refresh_all(self):
         self.hello.set_label(f"{system.greeting()}, {system.user_name()}")
-        child = self.chip_box.get_first_child()
-        while child is not None:
-            nxt = child.get_next_sibling()
-            self.chip_box.remove(child)
-            child = nxt
         bat = system.battery()
+        bits = []
         if bat:
             pct, charging, left = bat
-            color = "green" if charging or pct > 30 else "yellow" if pct > 15 else "red"
-            icon = "\U000f0084" if charging else "\U000f0079" if pct > 90 else \
-                chr(0xF007A + min(8, max(0, pct // 10 - 1)))   # 󰁺..󰂂 by tens
-            text = f"{pct}%" + (f" · {left} {'to full' if charging else 'left'}" if left else "")
-            self.chip_box.append(ui.chip(text, color, icon))
+            self.ring.set(pct, charging)
+            bits.append(f"{pct}%" + (" charging" if charging else "") + (f" · {left} {'to full' if charging else 'left'}" if left else ""))
+        else:
+            self.ring.set(None, False)
         up = system.uptime()
         if up:
-            self.chip_box.append(ui.chip(up, "gray", "\U000f0150"))
-        for t in self.tiles:
-            t.refresh()
+            bits.append(up)
+        self.meta.set_label(" · ".join(bits))
+        if self.wifi is not None:
+            self.refresh_wifi()
+        if self.bt is not None:
+            self.refresh_bt()
+        self.refresh_jyoti()
+        self.refresh_power()
+        for p in self.parts:
+            if isinstance(p, bento.Circle):
+                p.refresh()
         for s in self.sliders:
             s.refresh()
+        if self.wall is not None:
+            self.wall.refresh()
+        if self.wifi is not None:
+            GLib.idle_add(lambda: (self.say(self.wifi.words()), False)[1])
 
     def focused_tile(self):
+        """What o / Shift+Enter opens: the focused circle or square."""
         w = self.panel.get_focus() if self.panel is not None else None
-        while w is not None and not isinstance(w, TileButton):
+        while w is not None:
+            if isinstance(w, bento.Circle):
+                return w
+            if getattr(w, "owner", None) is not None:
+                return w.owner
+            if isinstance(w, bento.Segments) and w is self.power:
+                return w
             w = w.get_parent()
-        return w
+        return None
 
     def key(self, name, row, mods):
         if name in ("Return", "KP_Enter") and "shift" in mods:
@@ -424,6 +444,7 @@ class Plugin(Base):
         f = self.panel.get_focus() if self.panel is not None else None
         return next((s for s in self.sliders if f is s.scale), None)
 
+
     def v_move(self, n, way):
         s = self.focused_slider()
         if s is not None and way in ("left", "right"):
@@ -432,8 +453,8 @@ class Plugin(Base):
             return
         if self.panel is None:
             return
-        if self.panel.get_focus() is None and self.tiles:
-            self.tiles[0].grab_focus()
+        if self.panel.get_focus() is None and self.focusables:
+            self.focusables[0].grab_focus()
             return
         d = {"left": Gtk.DirectionType.LEFT, "right": Gtk.DirectionType.RIGHT,
              "down": Gtk.DirectionType.DOWN, "up": Gtk.DirectionType.UP}[way]
@@ -441,11 +462,11 @@ class Plugin(Base):
             self.panel.child_focus(d)
 
     def v_top(self, _n, _a):
-        if self.tiles:
-            self.tiles[0].grab_focus()
+        if self.focusables:
+            self.focusables[0].grab_focus()
 
     def v_bottom(self, _n, _a):
-        last = ([s.scale for s in self.sliders] or self.tiles)[-1:]
+        last = self.focusables[-1:]
         if last:
             last[0].grab_focus()
 
@@ -468,7 +489,9 @@ class Plugin(Base):
 
     def v_details(self, _n, _a):
         t = self.focused_tile()
-        if t is None or not t.open_details():
+        if t is self.power and t is not None:
+            self.open_details("power-profile", None)
+        elif t is None or not t.open_details():
             self.set_status("this setting has no details", "bad")
 
     def v_mute(self, _n, _a):

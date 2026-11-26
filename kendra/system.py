@@ -385,3 +385,156 @@ def user_name():
 def greeting():
     h = time.localtime().tm_hour
     return "Good morning" if h < 12 else "Good afternoon" if h < 17 else "Good evening"
+
+
+# ------------------------------------------------------ the bento's data
+# (2026-11-26) The Wi-Fi square's signal and traffic, the Bluetooth square's
+# devices, the power modes and the wallpaper picture.
+
+def wifi_device():
+    for line in run("nmcli -t -f DEVICE,TYPE device")[1].splitlines():
+        dev, _, kind = line.partition(":")
+        if kind == "wifi":
+            return dev
+    return None
+
+
+def wifi_signal(dev):
+    """(percent or None, dBm or None) of the network you're on."""
+    pct = None
+    for line in run("nmcli -t -f IN-USE,SIGNAL device wifi list --rescan no")[1].splitlines():
+        if line.startswith("*:"):
+            try:
+                pct = int(line.split(":")[1])
+            except ValueError:
+                pass
+    dbm = None
+    if dev and have("iw"):
+        m = re.search(r"signal:\s*(-?\d+)\s*dBm", run(["iw", "dev", dev, "link"])[1])
+        dbm = int(m.group(1)) if m else None
+    return pct, dbm
+
+
+def signal_word(pct):
+    if pct is None:
+        return 0, ""
+    if pct >= 75:
+        return 4, "Excellent"
+    if pct >= 55:
+        return 3, "Strong"
+    if pct >= 35:
+        return 2, "Fair"
+    return 1, "Weak"
+
+
+class Traffic:
+    """Download and upload speed, one sample every `step` seconds for the
+    last minute, read from the device's byte counters (no tool, nothing on
+    the network). Kept in memory by the resident daemon, so the panel opens
+    on a full minute."""
+
+    def __init__(self, step=2, keep=30):
+        self.step, self.keep = step, keep
+        self.down, self.up = [], []
+        self.last = None
+        self.dev = None
+
+    def counters(self):
+        try:
+            base = f"/sys/class/net/{self.dev}/statistics/"
+            with open(base + "rx_bytes") as rx, open(base + "tx_bytes") as tx:
+                return int(rx.read()), int(tx.read()), time.monotonic()
+        except (OSError, ValueError, TypeError):
+            return None
+
+    def sample(self):
+        now = self.counters()
+        if now is None:
+            self.last = None
+            return
+        if self.last is not None:
+            dt = max(0.5, now[2] - self.last[2])
+            self.down.append(max(0, (now[0] - self.last[0]) / dt))
+            self.up.append(max(0, (now[1] - self.last[1]) / dt))
+            del self.down[:-self.keep], self.up[:-self.keep]
+        self.last = now
+
+
+def rate(bps):
+    """Bytes a second as (number, unit): "12.4", "MB/s"."""
+    if bps >= 1_000_000:
+        return f"{bps / 1_000_000:.1f}", "MB/s"
+    if bps >= 1000:
+        return f"{bps / 1000:.0f}", "kB/s"
+    return f"{bps:.0f}", "B/s"
+
+
+def bt_devices():
+    """Connected Bluetooth devices: [{mac, name, icon, battery}], in
+    bluetoothctl's order."""
+    out = []
+    for line in run("bluetoothctl devices Connected")[1].splitlines():
+        if not line.startswith("Device ") or line.count(" ") < 2:
+            continue
+        _, mac, name = line.split(" ", 2)
+        info = run(["bluetoothctl", "info", mac])[1]
+        m = re.search(r"Battery Percentage:.*\((\d+)\)", info)
+        icon = re.search(r"Icon:\s*(\S+)", info)
+        out.append({"mac": mac.upper(), "name": name, "icon": icon.group(1) if icon else "",
+                    "battery": int(m.group(1)) if m else None})
+    return out
+
+
+KINDS = {"audio-headset": "Headset", "audio-headphones": "Headphones", "audio-card": "Speaker",
+         "input-mouse": "Mouse", "input-keyboard": "Keyboard", "input-gaming": "Controller",
+         "phone": "Phone", "computer": "Computer"}
+
+
+def pick_device(devs, recent):
+    """The one the square shows: a device at 20% or less (the lowest first),
+    else the one connected most recently (`recent`: mac -> when), else the
+    first. Each dev may carry "low": its lowest battery."""
+    low = [d for d in devs if d.get("low") is not None and d["low"] <= 20]
+    if low:
+        return min(low, key=lambda d: d["low"])
+    if not devs:
+        return None
+    return max(devs, key=lambda d: (recent.get(d["mac"], 0), -devs.index(d)))
+
+
+PROFILES = [("power-saver", "Saver", "\U000f032a"), ("balanced", "Balanced", "\U000f05d1"),
+            ("performance", "Performance", "\U000f0241")]
+
+
+def power_profiles():
+    """[(id, name, glyph)] this machine offers, and the current id."""
+    if not have("powerprofilesctl"):
+        return [], None
+    found = re.findall(r"^\s*\*?\s*([a-z-]+):\s*$", run("powerprofilesctl list")[1], re.MULTILINE)
+    cur = run("powerprofilesctl get")[1]
+    return [p for p in PROFILES if p[0] in found], cur or None
+
+
+def set_power_profile(pid):
+    run(["powerprofilesctl", "set", pid])
+
+
+def wallpaper_image(conf):
+    """The picture on the desktop now: config `image`, else swaybg's -i."""
+    path = conf.get("image")
+    if path:
+        return os.path.realpath(expand(path))
+    out = run("pgrep -a swaybg")[1]
+    m = re.search(r"-i\s+(\S+)", out)
+    return os.path.realpath(m.group(1)) if m else None
+
+
+def wallpaper_name(path):
+    """ "wallpaper-20261126-RFHilo.jpg" -> "RF Hilo"; "Trail_Cedars.png" -> "Trail Cedars"."""
+    if not path:
+        return ""
+    stem = os.path.splitext(os.path.basename(path))[0]
+    stem = re.sub(r"^wallpaper-\d{8}-", "", stem)
+    stem = re.sub(r"[_-]+", " ", stem)
+    stem = re.sub(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", stem)
+    return stem.strip()
