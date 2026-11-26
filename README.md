@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <img alt="kendra: quick settings panel" src="assets/screenshots/kendra.png" width="100%">
+  <img alt="kendra: quick settings greeting Asha, battery and uptime, tiles for Wi-Fi, Bluetooth, hotspot, do not disturb, Jyoti, phone link, dark theme, wallpaper and power, the Jyoti mode and brightness" src="assets/screenshots/kendra.webp" width="100%">
 </p>
 
 > *Kendra* (केन्द्र) is Sanskrit for "centre": the centre every quick setting sits in.
