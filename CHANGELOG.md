@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.6.1 -- 2026-11-26
+
+- A smaller panel: about 15% narrower and shorter, with smaller circles, numbers and gaps.
+
 ## v0.6.0 -- 2026-11-26
 
 - **A new panel: the bento.** Wi-Fi and Bluetooth are big squares (the circle toggles, the arrow or a right click opens tarang / setu). Wi-Fi shows its signal bars, the download speed big with upload beside it, and the last minute as two lines (download and upload), each with its peak. Bluetooth shows the device that matters: one at 20% or less, else the one connected most recently; earbuds as Left and Right in big light numbers with the case under them and what's charging, the rest as "+N more". Volume and brightness stand as tall capsules. Jyoti (Off, Akhaṇḍa, Nandādīpa) and power mode (Saver, Balanced, Performance) are segments where the chosen one grows to show its name. Hotspot, phone link, quiet and theme are circles: left click toggles, right click opens their panel. The wallpaper you're on is a pill with its name; click it for a new one. Your initial sits in a ring that is the battery, and one line at the bottom says what's under the pointer.

@@ -76,13 +76,13 @@ class Circle(Gtk.Button, Hoverable):
     """A plain on / off switch: the icon in a circle, filled in its colour
     when on. Left click toggles, right click opens its panel."""
 
-    def __init__(self, plugin, tile, size=56):
+    def __init__(self, plugin, tile, size=46):
         super().__init__(valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
         self.plugin, self.tile, self.on, self.sub = plugin, tile, None, ""
         self.add_css_class("k-circle")
         self.add_css_class(f"q-{tile.color}")
         self.set_size_request(size, size)
-        self.icon = glyph(tile.icon, 22)
+        self.icon = glyph(tile.icon, 19)
         self.set_child(self.icon)
         self.connect("clicked", lambda *_: self.activate_tile())
         right_click(self, self.open_details)
@@ -132,7 +132,7 @@ class Segments(Gtk.Box, Hoverable):
             b.add_css_class("k-opt")
             b.add_css_class(f"q-{color}")
             box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
-            box.append(glyph(icon, 20))
+            box.append(glyph(icon, 17))
             lab = ui.label(name, "k-opt-name")
             lab.set_visible(False)
             box.append(lab)
@@ -189,7 +189,7 @@ class Tall(Gtk.Overlay, Hoverable):
         drag.connect("drag-update", lambda g, dx, dy: self.point(g.get_start_point()[2] + dy))
         self.add_controller(drag)
         self.value = ui.label("", "k-tall-value", valign=Gtk.Align.START, halign=Gtk.Align.CENTER, can_target=False)
-        self.icon = glyph(source.icon, 22, "k-tall-icon")
+        self.icon = glyph(source.icon, 19, "k-tall-icon")
         self.icon.set_valign(Gtk.Align.END)
         self.icon.set_halign(Gtk.Align.CENTER)
         self.add_overlay(self.value)
@@ -277,8 +277,8 @@ class Square(Gtk.Box, Hoverable):
         self.toggle.add_css_class("k-circle")
         self.toggle.add_css_class("k-sq-toggle")
         self.toggle.add_css_class(f"q-{color}")
-        self.toggle.set_size_request(48, 48)
-        self.toggle.set_child(glyph(tile.icon, 21))
+        self.toggle.set_size_request(40, 40)
+        self.toggle.set_child(glyph(tile.icon, 18))
         self.toggle.connect("clicked", lambda *_: self.activate_tile())
         self.toggle.owner = self
         top.append(self.toggle)
@@ -287,7 +287,7 @@ class Square(Gtk.Box, Hoverable):
         top.append(self.extra)
         self.go = Gtk.Button(valign=Gtk.Align.START)
         self.go.add_css_class("k-go")
-        self.go.set_child(glyph(CHEVRON, 16))
+        self.go.set_child(glyph(CHEVRON, 14))
         self.go.set_tooltip_text("Open the full panel (right click, o)")
         self.go.connect("clicked", lambda *_: self.open_details())
         self.go.set_can_focus(False)
@@ -365,7 +365,7 @@ class WifiSquare(Square):
         self.upl = ui.label("", "k-up", valign=Gtk.Align.BASELINE, hexpand=True, xalign=1)
         for w in (self.speed, self.unit, self.upl):
             big.append(w)
-        self.chart = Gtk.DrawingArea(content_height=40, hexpand=True, vexpand=True)
+        self.chart = Gtk.DrawingArea(content_height=32, hexpand=True, vexpand=True)
         self.chart.set_draw_func(self.draw_chart)
         axis = Gtk.Box(spacing=8)
         axis.append(ui.label("60 s", "k-axis"))
@@ -586,7 +586,7 @@ class BatteryRing(Gtk.DrawingArea):
     """Your initial on the accent, inside a ring that is the battery."""
 
     def __init__(self, letter):
-        super().__init__(content_width=46, content_height=46, valign=Gtk.Align.CENTER)
+        super().__init__(content_width=38, content_height=38, valign=Gtk.Align.CENTER)
         self.add_css_class("k-ring")
         self.letter, self.pct, self.color = letter, None, (0.557, 0.886, 0.651)
         self.set_draw_func(self.draw)
@@ -611,7 +611,7 @@ class BatteryRing(Gtk.DrawingArea):
         cr.arc(cx, cy, r - 4.5, 0, 2 * math.pi)
         cr.fill()
         layout = self.create_pango_layout(self.letter)
-        layout.set_font_description(Pango.FontDescription.from_string("Adwaita Sans Heavy 15px"))
+        layout.set_font_description(Pango.FontDescription.from_string("Adwaita Sans Heavy 13px"))
         ink, _ = layout.get_pixel_extents()
         cr.set_source_rgb(0.055, 0.059, 0.067)
         cr.move_to(cx - ink.width / 2 - ink.x, cy - ink.height / 2 - ink.y)
@@ -641,7 +641,7 @@ class WallpaperPill(Gtk.Button, Hoverable):
         row.append(self.title)
         rf = Gtk.Box(valign=Gtk.Align.CENTER)
         rf.add_css_class("k-wall-refresh")
-        rf.append(glyph(REFRESH, 30))
+        rf.append(glyph(REFRESH, 26))
         row.append(rf)
         over.add_overlay(row)
         self.set_child(over)

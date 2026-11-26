@@ -75,7 +75,7 @@ def setu_mods():
 class Plugin(Base):
     name, title, icon, color = "kendra", "Quick settings", "\U000f0493", "mauve"
     layout = "card"
-    width = 352
+    width = 300
     anchor = ("top", "right")
     modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
     start_mode = "normal"
@@ -128,10 +128,10 @@ class Plugin(Base):
         return t if t.available() else None
 
     def _build(self):
-        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         root.add_css_class("qs")
         root.append(self._header())
-        grid = Gtk.Grid(column_spacing=10, row_spacing=10, column_homogeneous=True, row_homogeneous=True)
+        grid = Gtk.Grid(column_spacing=8, row_spacing=8, column_homogeneous=True, row_homogeneous=True)
         grid.add_css_class("k-bento")
         def place(w, pos):
             grid.attach(w, *pos)
@@ -206,12 +206,12 @@ class Plugin(Base):
         for k in QUIET:
             t = self.tile(k)
             if t:
-                c = bento.Circle(self, t, size=50)
+                c = bento.Circle(self, t, size=42)
                 bottom.append(c)
                 self.parts.append(c)
                 self.focusables.append(c)
         for c in extra:
-            c.set_size_request(50, 50)
+            c.set_size_request(42, 42)
             bottom.append(c)
         t = self.tile("wallpaper")
         if t:
