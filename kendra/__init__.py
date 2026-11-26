@@ -77,7 +77,7 @@ def setu_mods():
 class Plugin(Base):
     name, title, icon, color = "kendra", "Quick settings", "\U000f0493", "mauve"
     layout = "card"
-    width = 276
+    width = 260
     anchor = ("top", "right")
     modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
     start_mode = "normal"

@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.7.1 -- 2026-11-26
+
+- Volume and brightness are slimmer rounded columns that the liquid fills edge to edge (no full round ends); the panel is a little narrower again.
+
 ## v0.7.0 -- 2026-11-26
 
 - **Volume and brightness hold liquid.** Each is a glass pill filled to its level (white for volume, honey for brightness) with a slowly moving surface that sloshes when the level changes; it moves only while the panel shows. Drag, scroll or h / l as before; muted, the liquid turns grey and still. No dark box behind them any more.

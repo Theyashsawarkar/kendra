@@ -175,6 +175,9 @@ class Tall(Gtk.Overlay, Hoverable):
         self.add_css_class("k-tall")
         self.add_css_class(css)
         self.level, self.vel, self.muted, self.tick = None, 0.0, False, None
+        # slimmer than its cell, centred
+        self.set_size_request(54, -1)
+        self.set_halign(Gtk.Align.CENTER)
         self.fill = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.fill.add_css_class("k-liquid")
         self.fill.set_draw_func(self.draw_fill)
@@ -240,10 +243,15 @@ class Tall(Gtk.Overlay, Hoverable):
         import cairo  # noqa: PLC0415
 
         def pill():
-            r = (w - 2) / 2
+            # a rounded column (corners about a third of its width), not a
+            # full capsule: the liquid fills the whole column
+            r = min((w - 2) * 0.36, 20)
+            x0, y0, x1, y1 = 1, 1, w - 1, h - 1
             cr.new_sub_path()
-            cr.arc(1 + r, 1 + r, r, math.pi, 0)
-            cr.arc(1 + r, h - 1 - r, r, 0, math.pi)
+            cr.arc(x1 - r, y0 + r, r, -math.pi / 2, 0)
+            cr.arc(x1 - r, y1 - r, r, 0, math.pi / 2)
+            cr.arc(x0 + r, y1 - r, r, math.pi / 2, math.pi)
+            cr.arc(x0 + r, y0 + r, r, math.pi, 3 * math.pi / 2)
             cr.close_path()
         pill()
         cr.set_source_rgba(1, 1, 1, 0.07)
