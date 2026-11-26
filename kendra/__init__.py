@@ -47,7 +47,7 @@ DETAILS = {"wifi": ("tarang", []), "bluetooth": ("setu", []), "hotspot": ("taran
            "power-profile": ("urja", [])}
 # Where each part sits in the bento (column, row, width, height), 4 columns.
 WIFI, VOLUME, BRIGHT = (0, 0, 2, 3), (2, 0, 1, 3), (3, 0, 1, 3)
-JYOTI, BT, NOTIFY, POWER = (0, 3, 2, 1), (2, 3, 2, 3), (0, 4, 2, 1), (0, 5, 2, 1)
+BT = (2, 3, 2, 3)
 BOTTOM = 6
 # circles in the bottom row, before the wallpaper (dnd only when there's no
 # three-way notifications tile)
@@ -165,6 +165,7 @@ class Plugin(Base):
                 place(tall, pos)
                 self.sliders.append(tall)
                 self.focusables.append(tall.scale)
+        pills = []      # the left column's pills under Wi-Fi; they share its height
         t = self.tile("jyoti") or self.tile("jagaran") or self.tile("caffeine")
         if t:
             colors = ["sky", "peach", "yellow", "green"]
@@ -174,7 +175,7 @@ class Plugin(Base):
                 opts.append(("on", "On", FLAME, "peach"))
             self.jyoti = bento.Segments(self, t.title, opts, lambda k, t=t: self.pick_jyoti(t, k))
             self.jyoti.tile = t
-            place(self.jyoti, JYOTI)
+            pills.append(self.jyoti)
             self.focusables += list(self.jyoti.buttons.values())
         t = self.tile("bluetooth")
         if t:
@@ -188,7 +189,7 @@ class Plugin(Base):
                 opts = [(pid, name, glyph, "green") for pid, name, glyph in profiles]
                 self.power = bento.Segments(self, "Power mode", opts, self.pick_power,
                                             open_fn=lambda: self.open_details("power-profile", None))
-                place(self.power, POWER)
+                pills.append(self.power)
                 self.focusables += list(self.power.buttons.values())
         # Notifications: a tile with levels (normal / silent / dnd) is a
         # three-way pill; without one, a plain dnd circle in the bottom row.
@@ -203,8 +204,23 @@ class Plugin(Base):
             self.notify = bento.Segments(self, t.title, opts, lambda k, t=t: self.pick_level(t, k, self.refresh_notify),
                                          words={lv["name"]: lv.get("about", "") for lv in t.levels})
             self.notify.tile = t
-            place(self.notify, NOTIFY)
+            pills.append(self.notify)
             self.focusables += list(self.notify.buttons.values())
+        # Whatever pills there are fill the column under Wi-Fi evenly (no
+        # hole for one you haven't set up); with none, Bluetooth takes the row.
+        if pills:
+            order = [self.jyoti, self.notify, self.power]   # the same order whichever are set up
+            pills = [p for p in order if p in pills]
+            # three row-high slots: one pill sits in the middle, two at the
+            # top and bottom, three fill them; never a stretched pill
+            slots = {1: [None, 0, None], 2: [0, None, 1], 3: [0, 1, 2]}[min(len(pills), 3)]
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, homogeneous=True)
+            for k in slots:
+                col.append(Gtk.Box() if k is None else pills[k])
+            place(col, (0, 3, 2, 3))
+        elif self.bt is not None:
+            grid.remove(self.bt)
+            place(self.bt, (0, 3, 4, 3))
         known = {"wifi", "bluetooth", "jyoti", "jagaran", "caffeine", "power-profile", "wallpaper",
                  "notifications", *CIRCLES}
         bottom = Gtk.Box(spacing=8)

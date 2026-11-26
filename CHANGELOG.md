@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v1.0.1 -- 2026-11-26
+
+- The pills under Wi-Fi (Jyoti, notifications, power mode) share that column whatever is set up: one sits in the middle, two at the top and bottom, always the same order and a row high, so there's never a hole or a stretched pill; with none, Bluetooth takes the row. Brightness's liquid uses the theme's yellow.
+
 ## v1.0.0 -- 2026-11-26
 
 kendra 1.0: the bento, finished.

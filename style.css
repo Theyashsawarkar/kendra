@@ -95,7 +95,7 @@ button.k-opt.on.q-green { background: @green; }
 /* tall capsules: a fill from the bottom, the value on top, the icon at the foot */
 .k-tall { background: transparent; }
 .k-tall .k-liquid { color: alpha(@text, 0.95); }
-.k-tall.brightness .k-liquid { color: #f0cf7c; }
+.k-tall.brightness .k-liquid { color: @yellow; }
 .k-tall-value { margin-top: 12px; font-weight: 700; font-size: 10.5px; color: @subtext1; font-feature-settings: "tnum"; }
 .k-tall.full .k-tall-value { color: @crust; }
 .k-tall-icon { margin-bottom: 12px; color: @crust; }
