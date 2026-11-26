@@ -15,6 +15,9 @@ import subprocess
 import time
 
 
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07")
+
+
 def expand(cmd):
     return os.path.expanduser(os.path.expandvars(cmd))
 
@@ -26,7 +29,9 @@ def run(cmd, timeout=4):
     try:
         r = subprocess.run(expand(cmd) if isinstance(cmd, str) else cmd, shell=isinstance(cmd, str),
                            capture_output=True, text=True, timeout=timeout)
-        return r.returncode, r.stdout.strip()
+        # bluetoothctl colours its lines even into a pipe ("\x1b[1;30mDevice ..."),
+        # which hid every connected device: no escape codes, ever
+        return r.returncode, ANSI.sub("", r.stdout).strip()
     except (OSError, subprocess.TimeoutExpired):
         return 127, ""
 

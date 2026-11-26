@@ -2,6 +2,15 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v1.0.0 -- 2026-11-26
+
+kendra 1.0: the bento, finished.
+
+- **Bluetooth shows your earbuds.** bluetoothctl colours its lines even into a pipe, which hid every connected device; kendra now strips colour codes from everything it reads. The buds' left, right and case are read again every 3 seconds while the panel is open (they announce them every few seconds), and listening starts once the square exists, so it fills in on the first open too. The case row always shows (a dash until the case is heard).
+- **Volume and brightness**: wider columns in proportion to the Wi-Fi square (together they're its size), corners matching the squares; scroll on them (5% a notch, a touchpad adds up to the same); where you are is a rim drawn on the column's own shape (it was an oval).
+- **Even and organised**: the Wi-Fi name has room under its icon; both squares put their icon and arrow on top and their facts on the bottom line; the same padding everywhere; one circle size; larger icons, sized to the shape they sit in; a narrower panel.
+- New tests: which Bluetooth device shows, the wallpaper's name, speeds, signal words, colour codes.
+
 ## v0.7.1 -- 2026-11-26
 
 - Volume and brightness are slimmer rounded columns that the liquid fills edge to edge (no full round ends); the panel is a little narrower again.

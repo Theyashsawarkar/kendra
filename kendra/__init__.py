@@ -4,6 +4,7 @@ Toggles, sliders, battery and session buttons in a panel under the bar's
 top-right corner. Opens with the last known state, then every tile
 refreshes in a background thread, so slow tools never hold it up.
 """
+import logging
 import time
 
 from gi.repository import GLib, Gtk, Pango
@@ -14,6 +15,8 @@ from vyom import Plugin as Base
 from vyom import util
 
 from . import bento, system, vim
+
+log = logging.getLogger("vyom.kendra")
 
 # KEYBINDS (generated from kendra/vim.py by scripts/keybinds.py; don't edit by hand)
 # keybind: Vyom/quick settings:normal | h | Move left in the tiles (on a slider: lower it by 5)
@@ -77,7 +80,7 @@ def setu_mods():
 class Plugin(Base):
     name, title, icon, color = "kendra", "Quick settings", "\U000f0493", "mauve"
     layout = "card"
-    width = 260
+    width = 228
     anchor = ("top", "right")
     modal = True                # vim keys (Vyom 0.7): always NORMAL; h / j / k / l move, Enter toggles
     start_mode = "normal"
@@ -101,6 +104,7 @@ class Plugin(Base):
         if self.card is None:
             self.card = self._build()
         self.refresh_all()
+        self.start_listening()
         if self.focusables:
             GLib.idle_add(self.first_focus)
         return self.card
@@ -210,7 +214,7 @@ class Plugin(Base):
                 continue
             t = self.tile(k)
             if t:
-                c = bento.Circle(self, t, size=42)
+                c = bento.Circle(self, t, size=40)
                 bottom.append(c)
                 self.parts.append(c)
                 self.focusables.append(c)
@@ -238,13 +242,32 @@ class Plugin(Base):
         return True
 
     def opened(self, args):
+        """Vyom calls this before the card is built; build_card starts the
+        listening once the Bluetooth square exists."""
+        self.start_listening()
+
+    def start_listening(self):
         mods = setu_mods()
         if mods and self.bt is not None:
             if self.fp is None:
                 self.fp = mods[1].Scanner()
             self.background(self.fp.start)
+            # The buds announce left / right / case every few seconds: look
+            # again while the panel is open, so the square fills in by itself.
+            if getattr(self, "bt_watch", None) is None:
+                self.bt_watch = GLib.timeout_add_seconds(3, self.bt_tick)
+
+    def bt_tick(self):
+        if self.panel is None or not self.panel.get_visible():
+            self.bt_watch = None
+            return False
+        self.refresh_bt()
+        return True
 
     def closed(self):
+        if getattr(self, "bt_watch", None) is not None:
+            GLib.source_remove(self.bt_watch)
+            self.bt_watch = None
         if self.fp is not None:
             self.background(self.fp.stop)
 
@@ -353,7 +376,11 @@ class Plugin(Base):
             for mac in list(self.first_seen):
                 if mac not in {d["mac"] for d in devs}:
                     del self.first_seen[mac]
-            return on, devs, system.pick_device(devs, recent)
+            pick = system.pick_device(devs, recent)
+            if pick is not None and pick.get("parts") != getattr(self, "last_parts", None):
+                self.last_parts = pick.get("parts")
+                log.debug("kendra: bluetooth %s %s", pick["name"], pick.get("parts") or f"{pick.get('battery')}%")
+            return on, devs, pick
         self.background(get, then=lambda r: b.show_state(*r) if isinstance(r, tuple) else None)
 
     def _header(self):

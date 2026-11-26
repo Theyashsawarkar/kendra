@@ -76,13 +76,13 @@ class Circle(Gtk.Button, Hoverable):
     """A plain on / off switch: the icon in a circle, filled in its colour
     when on. Left click toggles, right click opens its panel."""
 
-    def __init__(self, plugin, tile, size=46):
+    def __init__(self, plugin, tile, size=40):
         super().__init__(valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
         self.plugin, self.tile, self.on, self.sub = plugin, tile, None, ""
         self.add_css_class("k-circle")
         self.add_css_class(f"q-{tile.color}")
         self.set_size_request(size, size)
-        self.icon = glyph(tile.icon, 19)
+        self.icon = glyph(tile.icon, 23)
         self.set_child(self.icon)
         self.connect("clicked", lambda *_: self.activate_tile())
         right_click(self, self.open_details)
@@ -133,7 +133,7 @@ class Segments(Gtk.Box, Hoverable):
             b.add_css_class("k-opt")
             b.add_css_class(f"q-{color}")
             box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
-            box.append(glyph(icon, 17))
+            box.append(glyph(icon, 21))
             lab = ui.label(name, "k-opt-name")
             lab.set_visible(False)
             box.append(lab)
@@ -175,9 +175,10 @@ class Tall(Gtk.Overlay, Hoverable):
         self.add_css_class("k-tall")
         self.add_css_class(css)
         self.level, self.vel, self.muted, self.tick = None, 0.0, False, None
-        # slimmer than its cell, centred
-        self.set_size_request(54, -1)
-        self.set_halign(Gtk.Align.CENTER)
+        # fills its column, a little in from the sides: the two stand as a
+        # slim pair beside Wi-Fi
+        self.set_margin_start(5)
+        self.set_margin_end(5)
         self.fill = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.fill.add_css_class("k-liquid")
         self.fill.set_draw_func(self.draw_fill)
@@ -190,12 +191,18 @@ class Tall(Gtk.Overlay, Hoverable):
         self.scale.set_can_target(False)
         self.scale.connect("value-changed", self.changed)
         self.add_overlay(self.scale)
+        # The wheel (or two fingers on the touchpad): up raises, down lowers,
+        # 5% a notch; a touchpad's smooth scroll adds up to the same.
+        scroll = Gtk.EventControllerScroll(flags=Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll.connect("scroll", self.scrolled)
+        self.add_controller(scroll)
+        self.scroll_rest = 0.0
         drag = Gtk.GestureDrag()
         drag.connect("drag-begin", lambda g, x, y: self.point(y))
         drag.connect("drag-update", lambda g, dx, dy: self.point(g.get_start_point()[2] + dy))
         self.add_controller(drag)
         self.value = ui.label("", "k-tall-value", valign=Gtk.Align.START, halign=Gtk.Align.CENTER, can_target=False)
-        self.icon = glyph(source.icon, 19, "k-tall-icon")
+        self.icon = glyph(source.icon, 24, "k-tall-icon")
         self.icon.set_valign(Gtk.Align.END)
         self.icon.set_halign(Gtk.Align.CENTER)
         self.add_overlay(self.value)
@@ -232,6 +239,16 @@ class Tall(Gtk.Overlay, Hoverable):
             widget.queue_draw()
         return GLib.SOURCE_CONTINUE
 
+    def scrolled(self, _ctl, _dx, dy):
+        self.scroll_rest += dy
+        steps = int(self.scroll_rest)          # whole notches; keep the rest
+        if steps:
+            self.scroll_rest -= steps
+            v = self.scale.get_value() - 5 * steps
+            self.scale.set_value(max(0, min(100, v)))
+            self.plugin.say(self.words())
+        return True
+
     def point(self, y):
         h = self.get_height() or 1
         self.scale.set_value(round(max(0, min(100, (1 - y / h) * 100))))
@@ -245,7 +262,7 @@ class Tall(Gtk.Overlay, Hoverable):
         def pill():
             # a rounded column (corners about a third of its width), not a
             # full capsule: the liquid fills the whole column
-            r = min((w - 2) * 0.36, 20)
+            r = min((w - 2) * 0.34, 26)   # the same corners as the squares
             x0, y0, x1, y1 = 1, 1, w - 1, h - 1
             cr.new_sub_path()
             cr.arc(x1 - r, y0 + r, r, -math.pi / 2, 0)
@@ -261,6 +278,7 @@ class Tall(Gtk.Overlay, Hoverable):
         cr.stroke()
         lv = max(0.0, min(100.0, self.level if self.level is not None else self.scale.get_value())) / 100
         if lv <= 0:
+            self.draw_rim(cr, pill)
             return
         top, full = 1, h - 2
         surf = top + full * (1 - lv)
@@ -294,6 +312,17 @@ class Tall(Gtk.Overlay, Hoverable):
         cr.rectangle(w * 0.16, surf + 6, 2.5, max(0, h - surf - 14))
         cr.fill()
         cr.restore()
+        self.draw_rim(cr, pill)
+
+    def draw_rim(self, cr, pill):
+        """Where you are (keyboard focus): a light rim on the column's own
+        shape, drawn here so it can't differ from it."""
+        if not self.has_css_class("sel"):
+            return
+        pill()
+        cr.set_source_rgba(0.957, 0.957, 0.949, 0.9)
+        cr.set_line_width(2.5)
+        cr.stroke()
 
     def words(self):
         v = int(self.scale.get_value())
@@ -353,31 +382,31 @@ class Square(Gtk.Box, Hoverable):
     there is (the round arrow, top right; right click too) and a body."""
 
     def __init__(self, plugin, tile, color):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.plugin, self.tile, self.on, self.sub = plugin, tile, None, ""
         self.add_css_class("k-square")
         top = Gtk.Box(spacing=6)
-        self.toggle = Gtk.Button(valign=Gtk.Align.START)
+        self.toggle = Gtk.Button(valign=Gtk.Align.CENTER)
         self.toggle.add_css_class("k-circle")
         self.toggle.add_css_class("k-sq-toggle")
         self.toggle.add_css_class(f"q-{color}")
         self.toggle.set_size_request(40, 40)
-        self.toggle.set_child(glyph(tile.icon, 18))
+        self.toggle.set_child(glyph(tile.icon, 22))
         self.toggle.connect("clicked", lambda *_: self.activate_tile())
         self.toggle.owner = self
         top.append(self.toggle)
         top.append(Gtk.Box(hexpand=True))
         self.extra = Gtk.Box(valign=Gtk.Align.CENTER)
         top.append(self.extra)
-        self.go = Gtk.Button(valign=Gtk.Align.START)
+        self.go = Gtk.Button(valign=Gtk.Align.CENTER)
         self.go.add_css_class("k-go")
-        self.go.set_child(glyph(CHEVRON, 14))
+        self.go.set_child(glyph(CHEVRON, 18))
         self.go.set_tooltip_text("Open the full panel (right click, o)")
         self.go.connect("clicked", lambda *_: self.open_details())
         self.go.set_can_focus(False)
         top.append(self.go)
         self.append(top)
-        self.body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, vexpand=True)
+        self.body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, vexpand=True)
         self.append(self.body)
         click = Gtk.GestureClick(button=1)
         click.connect("released", lambda g, n, x, y: self.body_clicked(x, y))
@@ -563,6 +592,9 @@ class BtSquare(Square):
         head.append(self.name)
         head.append(self.low)
         self.content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        # like the Wi-Fi square: the facts sit on the bottom line, the space
+        # between them and the header
+        self.body.set_valign(Gtk.Align.END)
         self.body.append(head)
         self.body.append(self.content)
 
@@ -638,8 +670,19 @@ class BtSquare(Square):
             bar.set_hexpand(True)
             duo.append(bar)
         self.content.append(duo)
-        case = parts.get("Case")
-        if case and case.get("level") is not None:
+        case = parts.get("Case") or {}
+        if case.get("level") is None:      # not heard yet: the row stays, with a dash
+            cr = Gtk.Box(spacing=8)
+            cr.add_css_class("k-case")
+            cr.append(ui.label("Case", "k-quiet"))
+            bar = ui.progress(0, "gray")
+            bar.set_hexpand(True)
+            bar.set_valign(Gtk.Align.CENTER)
+            cr.append(bar)
+            cr.append(ui.label("—", "k-case-v", "k-quiet"))
+            cr.set_tooltip_text("The case reports its battery while the buds are in it, or it's open")
+            self.content.append(cr)
+        else:
             cr = Gtk.Box(spacing=8)
             cr.add_css_class("k-case")
             cr.append(ui.label("Case" + (" · " + case["age"] if case.get("age") else ""), "k-quiet"))
@@ -725,7 +768,7 @@ class WallpaperPill(Gtk.Button, Hoverable):
         row.append(self.title)
         rf = Gtk.Box(valign=Gtk.Align.CENTER)
         rf.add_css_class("k-wall-refresh")
-        rf.append(glyph(REFRESH, 26))
+        rf.append(glyph(REFRESH, 28))
         row.append(rf)
         over.add_overlay(row)
         self.set_child(over)

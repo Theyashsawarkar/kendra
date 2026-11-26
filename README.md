@@ -16,7 +16,7 @@
 <!-- /identity -->
 
 <p align="center">
-  <b>Quick settings: Wi-Fi, Bluetooth, hotspot, DND, jyoti (keep awake), theme, wallpaper, power profile, volume, brightness, battery, lock, power.</b><br>
+  <b>Quick settings as a bento: Wi-Fi with its live speed, Bluetooth with each earbud, liquid volume and brightness, Jyoti, notifications, power mode, the wallpaper you're on.</b><br>
   Quick settings. A tool for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>, keyboard-driven panels for Wayland.
 </p>
 
@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <img alt="kendra: quick settings greeting Asha, battery and uptime, tiles for Wi-Fi, Bluetooth, hotspot, do not disturb, Jyoti, phone link, dark theme, wallpaper and power, the Jyoti mode and brightness" src="assets/screenshots/kendra.webp" width="100%">
+  <img alt="kendra: quick settings for Asha: the Wi-Fi square with its speed and the last minute, volume and brightness as glass columns of liquid, Jyoti, notifications and power mode as pills, the Bluetooth square, hotspot, phone link and theme circles and the wallpaper pill" src="assets/screenshots/kendra.webp" width="100%">
 </p>
 
 > *Kendra* (केन्द्र) is Sanskrit for "centre": the centre every quick setting sits in.
@@ -50,17 +50,18 @@ kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): on
 
 ## Features
 
-- A panel under the bar's top-right corner: your initial, a greeting, **chips for the battery and uptime**, and **lock and power** buttons set apart (power in red; `Space l` and `Space p` do the same).
-- Tiles: **Wi‑Fi, Bluetooth, hotspot, do not disturb, jyoti (keeping the laptop awake), dark theme, new wallpaper, power profile**. Every toggle **writes On or Off**, and an "on" tile **fills its icon in the tile's colour**, so you never guess from a faint tint.
-- **Wi‑Fi and Bluetooth name what they're on** ("Home Fiber 5G", "WH-1000XM5 · 78%", with the headphones' battery), and `o` opens their details: [tarang](https://github.com/Theyashsawarkar/tarang) and [setu](https://github.com/Theyashsawarkar/setu) when they're installed, or your own `open` command (`Shift+Enter`, a right click, or a click on the tile's `>` arrow too; a click anywhere else on the tile toggles it).
-- **Volume and brightness** sliders that show their value, a thick track and a big thumb; volume **names the output device**, and its icon button (or `m`) mutes.
-- **Vim keys** (Vyom 0.7): `h` / `j` / `k` / `l` move, `Enter` toggles, `Space` is the leader and never toggles a tile, `?` lists every key.
-- A clear **accent frame** on the tile or slider you're on.
-- Opens instantly with the last state, then refreshes every tile in the background; anything the machine doesn't have isn't shown.
-- Any tile can be driven by your own commands (`status` / `toggle` / `on` / `off`, matched with `on_when`).
-- A tile can have **levels** (Jyoti: Akhaṇḍa, Nandādīpa): while it's on, a row under the tiles picks one, and the tile's subtitle names it.
-- Keyboard first: every action has a key, shown in the footer; the mouse works too.
-- Never freezes the panel: slow commands run in the background.
+A bento of rounded glass under the bar's top-right corner, every part sized for what it does:
+
+- **The header**: your initial inside a ring that is the battery (green, yellow at 30%, red at 15%), a greeting, the battery and uptime, and **lock and power** (power in red; `Space l` and `Space p` do the same).
+- **The Wi-Fi square**: signal bars and the network, the **download speed big with upload beside it**, and the **last minute as two lines** (download and upload), each with its peak, read from the card's own counters. The circle toggles Wi-Fi; the arrow, the name or a right click opens [tarang](https://github.com/Theyashsawarkar/tarang).
+- **The Bluetooth square** shows the device that matters: one at 20% or less (the lowest), else the one connected most recently. **Earbuds show Left and Right** in big light numbers with a line each, the **case** under them and what's charging (from the buds' own Fast Pair broadcast, through [setu](https://github.com/Theyashsawarkar/setu) when it's installed); anything else its one battery, red when low. The rest are "+N more", which opens setu.
+- **Volume and brightness as glass columns of liquid**: filled to the level, with a slow moving surface that sloshes when it changes (only while the panel shows). Drag, scroll or `h` / `l`; right click on volume mutes, and the liquid turns grey and still.
+- **Pills for what you choose one of**: Jyoti (Off, Akhaṇḍa, Nandādīpa), notifications (Active, Silent, Do not disturb) and power mode (Saver, Balanced, Performance). Icons only; the chosen one grows into its colour and names itself.
+- **Circles for plain switches** (hotspot, phone link, theme): filled in their colour when on; left click toggles, right click opens their panel.
+- **The wallpaper you're on** as a pill with its name; click it for a new one.
+- **One line at the bottom** says what's under the pointer or the keyboard: "Wi-Fi · Home Fiber 5G · excellent, −47 dBm · ↓ 12.4 MB/s ↑ 1.1 MB/s".
+- **Vim keys** (Vyom 0.7): `h` / `j` / `k` / `l` move, `Enter` toggles, `o` opens, `Space` is the leader, `?` lists every key; where you are is a light rim on the part's own shape.
+- Opens instantly, refreshes in the background, and leaves out anything the machine doesn't have. Every part can be driven by your own commands.
 
 ## Install
 
@@ -144,12 +145,12 @@ Everything is optional, in `~/.config/vyom/config.toml` under `[plugin.kendra]`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `tiles` | wifi bluetooth hotspot dnd jyoti theme wallpaper power-profile | Which tiles, in order |
+| `tiles` | wifi bluetooth hotspot notifications dnd jyoti theme wallpaper power-profile | Which parts to show (their place in the bento is fixed) |
 | `lock / power` | loginctl lock-session / vishram | The header buttons (power: vishram inside Vyom when it's installed) |
 | `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color, levels (below) (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
 | `margin_top / margin_right` | 6 / 8 | Position under the bar |
 
-A tile with levels lists them under `levels`, each with a `name`, a `when` (a regex on the `status` output: this level is the current one) and a `set` command. While the tile is on, a row under the tiles shows a button per level, the current one filled in the tile's colour; click one (or move to it with `j` and press `Enter`) to switch. Clicking the tile itself still turns it on or off.
+A tile with levels lists them under `levels`, each with a `name`, a `when` (a regex on the `status` output: this level is the current one) and a `set` command. Jyoti's levels become its pill (with Off first); a `notifications` tile's levels become the notifications pill (optionally `color`, `icon` and `about`, the words in the bottom line). Without a `notifications` tile, `dnd` is a circle.
 
 ```toml
 [plugin.kendra.tile.jyoti]
@@ -159,6 +160,18 @@ toggle = "~/.local/bin/jyoti-toggle.sh"
 levels = [
   { name = "Akhaṇḍa", when = '"class":"active"', set = "~/.local/bin/jyoti-toggle.sh akhanda" },
   { name = "Nandādīpa", when = '"class":"strong"', set = "~/.local/bin/jyoti-toggle.sh nandadipa" },
+]
+```
+
+```toml
+[plugin.kendra.tile.notifications]
+title = "Notifications"
+status = "cat ~/.local/state/notification-mode/current"
+on_when = "."
+levels = [
+  { name = "Active", when = "^normal$", set = "notification-mode.sh normal", about = "they show, with sound" },
+  { name = "Silent", when = "^silent$", set = "notification-mode.sh silent", about = "they show, no sound" },
+  { name = "Do not disturb", when = "^dnd$", set = "notification-mode.sh dnd", about = "nothing shows" },
 ]
 ```
 
