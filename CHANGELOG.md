@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v1.1.0 -- 2026-11-27
 
 - **Opens instantly, every time** (first frame 50-100 ms, was 125-200 ms; the first opening 100 ms, was 0.6-0.85 s). With Vyom's live state (Vyom 0.9, ADR 12 there) Wi-Fi, Bluetooth and its devices' batteries, the power mode, volume, brightness, the hotspot (off) and the theme are read from memory, kept current by their daemons' own signals while the panel shows; nothing runs on the way to the first frame (it ran about 26 commands). What only a command can tell (your own tiles' `status`, the Wi-Fi signal in dBm, the wallpaper) is asked after the first frame. With an older Vyom it asks the old way.
 - **Your own tiles can say where their state lives** instead of a `status` command on every opening: `live = "unit:<name>"` (a systemd user unit's state), `"file:<path>"`, `"akashvani"` (the notification mode, in this process) or `"theme"` (GNOME's colour scheme), or a list of them, one per line for `on_when` and the levels' `when`.
