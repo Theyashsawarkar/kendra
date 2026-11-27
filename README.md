@@ -68,7 +68,7 @@ A bento of rounded glass under the bar's top-right corner, every part sized for 
 ### Requirements
 
 - [Vyom](https://github.com/Theyashsawarkar/vyom) 0.6.0 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
-- optional: nmcli, bluetoothctl, makoctl, gsettings, powerprofilesctl, wpctl, brightnessctl (each tile uses what's there)
+- optional: nmcli, bluetoothctl, gsettings, powerprofilesctl, wpctl, brightnessctl (each tile uses what's there)
 
 ### Install
 
@@ -147,8 +147,10 @@ Everything is optional, in `~/.config/vyom/config.toml` under `[plugin.kendra]`:
 |---|---|---|
 | `tiles` | wifi bluetooth hotspot notifications dnd jyoti theme wallpaper power-profile | Which parts to show (their place in the bento is fixed) |
 | `lock / power` | loginctl lock-session / vishram | The header buttons (power: vishram inside Vyom when it's installed) |
-| `tile.<name>` | (none) | Per tile: open, status, on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color, levels (below) (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
+| `tile.<name>` | (none) | Per tile: open, status, live (where its state lives instead of `status`, below), on_when, toggle, on, off, subtitle_on/off, title, icon, icon_svg (a line-drawing SVG in currentColor), color, levels (below) (without `open`, Wi‑Fi and hotspot open tarang and Bluetooth setu, when installed) |
 | `margin_top / margin_right` | 6 / 8 | Position under the bar |
+
+A tile can say where its state lives instead of running `status` on every opening (Vyom 0.9's live state, kept current by signals): `live = "unit:<name>"` is a systemd user unit's state (`active`, `inactive`...), `"file:<path>"` a small file's text, `"akashvani"` the notification mode (`normal`, `silent`, `dnd`), `"theme"` GNOME's colour scheme (`prefer-dark`, `default`, `prefer-light`); a list joins them one per line. `on_when` and the levels' `when` then match that text. Without the live state (an older Vyom) kendra works it out itself (`systemctl`, `gsettings`).
 
 A tile with levels lists them under `levels`, each with a `name`, a `when` (a regex on the `status` output: this level is the current one) and a `set` command. Jyoti's levels become its pill (with Off first); a `notifications` tile's levels become the notifications pill (optionally `color`, `icon` and `about`, the words in the bottom line). Without a `notifications` tile, `dnd` is a circle.
 

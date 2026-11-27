@@ -2,6 +2,15 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **Opens instantly, every time** (first frame 50-100 ms, was 125-200 ms; the first opening 100 ms, was 0.6-0.85 s). With Vyom's live state (Vyom 0.9, ADR 12 there) Wi-Fi, Bluetooth and its devices' batteries, the power mode, volume, brightness, the hotspot (off) and the theme are read from memory, kept current by their daemons' own signals while the panel shows; nothing runs on the way to the first frame (it ran about 26 commands). What only a command can tell (your own tiles' `status`, the Wi-Fi signal in dBm, the wallpaper) is asked after the first frame. With an older Vyom it asks the old way.
+- **Your own tiles can say where their state lives** instead of a `status` command on every opening: `live = "unit:<name>"` (a systemd user unit's state), `"file:<path>"`, `"akashvani"` (the notification mode, in this process) or `"theme"` (GNOME's colour scheme), or a list of them, one per line for `on_when` and the levels' `when`.
+- The card is built while Vyom is idle after it starts (which tiles this machine has takes a dozen commands, now in a thread then), so the first opening only shows it.
+- Do not disturb is akashvani's, read and switched in this process (the old built-in drove makoctl, which Vayu no longer runs).
+- No wakeups while hidden: the traffic chart samples only while the panel shows (it sampled every 2 s forever); it starts on the panel's opening, a first speed half a second in.
+- The buds' scan can no longer run on after the panel closes: closing it while BlueZ was still starting the scan left it on.
+
 ## v1.0.1 -- 2026-11-26
 
 - The pills under Wi-Fi (Jyoti, notifications, power mode) share that column whatever is set up: one sits in the middle, two at the top and bottom, always the same order and a row high, so there's never a hole or a stretched pill; with none, Bluetooth takes the row. Brightness's liquid uses the theme's yellow.

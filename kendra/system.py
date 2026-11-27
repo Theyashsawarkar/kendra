@@ -61,6 +61,7 @@ class Tile:
     # one status() last found, or None.
     levels = ()
     level = None
+    vyom = None        # the Vyom app (kendra sets it): akashvani, in this process
 
     def __init__(self, conf=None):
         self.conf = conf or {}
@@ -74,6 +75,11 @@ class Tile:
 
     def toggle(self, on):
         pass
+
+    def live_status(self):
+        """(on, subtitle) from memory (Vyom's live state, this process), or
+        None: then status() runs, in a thread."""
+        return None
 
 
 class CommandTile(Tile):
@@ -109,13 +115,32 @@ class CommandTile(Tile):
 
     def available(self):
         cmds = [self.conf.get(k) for k in ("status", "toggle", "on", "off", "run") if self.conf.get(k)]
+        if self.conf.get("live"):
+            from . import live   # noqa: PLC0415
+            live.track(self.conf["live"])
         cmds += [lv["set"] for lv in self.levels]
-        return bool(cmds) and all(have(c) for c in cmds)
+        return (bool(cmds) or bool(self.conf.get("live"))) and all(have(c) for c in cmds)
+
+    def live_status(self):
+        spec = self.conf.get("live")
+        if not spec:
+            return None
+        from . import live   # noqa: PLC0415
+        out = live.text(spec, self.vyom)
+        return None if out is None else self.parse(out)
 
     def status(self):
         if "run" in self.conf and "status" not in self.conf:
             return None, self.conf.get("subtitle", "")
+        if self.conf.get("live"):     # its state's sources say it; asked if not in memory
+            from . import live   # noqa: PLC0415
+            out = live.text(self.conf["live"], self.vyom, ask=True)
+            if out is not None:
+                return self.parse(out)
         _, out = run(self.conf["status"])
+        return self.parse(out)
+
+    def parse(self, out):
         on = re.search(self.conf.get("on_when", r"^(on|yes|true|active|enabled|1)$"), out, re.M) is not None
         self.level = None
         if on:
@@ -196,7 +221,19 @@ class Hotspot(Tile):
     def available(self):
         return have(self.cmd) or os.access(self.cmd, os.X_OK)
 
+    def live_status(self):
+        """Off from NetworkManager's state at once (the status command took
+        0.3 s every opening); on, its command still counts who's connected."""
+        from . import live   # noqa: PLC0415
+        h = live.hotspot()
+        if h is not None and not h[0]:
+            return False, "Off"
+        return None
+
     def status(self):
+        now = self.live_status()
+        if now is not None:
+            return now
         rc, out = run([self.cmd, "status", "--json"])
         try:
             st = json.loads(out) if rc == 0 else None
@@ -214,17 +251,34 @@ class Hotspot(Tile):
 
 
 class DoNotDisturb(Tile):
+    """akashvani's do not disturb, read and switched in this process
+    (akashvani is the notification server inside Vyom): no command."""
     key, title, icon, color = "dnd", "Do not disturb", "\U000f009b", "red"
 
-    def available(self):
-        return have("makoctl")
+    def server(self):
+        p = getattr(self.vyom, "plugins", {}).get("akashvani")
+        return getattr(p, "server", None)
 
-    def status(self):
-        on = "do-not-disturb" in run("makoctl mode")[1].split()
+    def available(self):
+        return self.server() is not None
+
+    def live_status(self):
+        s = self.server()
+        if s is None:
+            return None
+        on = s.dnd()
         return on, "notifications held" if on else "off"
 
+    status = live_status
+
     def toggle(self, on):
-        run(["makoctl", "mode", "-a" if on else "-r", "do-not-disturb"])
+        s = self.server()
+        if s is None:
+            return
+        # set_modes touches GTK (its popups): on the main loop
+        from gi.repository import GLib   # noqa: PLC0415
+        GLib.idle_add(lambda: (s.add_mode("do-not-disturb") if on else s.remove_mode("do-not-disturb", "dnd"),
+                               False)[1])
 
 
 class DarkTheme(Tile):
@@ -234,7 +288,14 @@ class DarkTheme(Tile):
     def available(self):
         return have("gsettings")
 
+    def live_status(self):
+        from . import live   # noqa: PLC0415
+        return live.theme()
+
     def status(self):
+        now = self.live_status()
+        if now is not None:
+            return now
         on = "dark" in run(["gsettings", "get", *self.schema])[1]
         # "catppuccin-mocha-mauve-standard+default" -> "Catppuccin"
         theme = run(["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"])[1].strip("'")
@@ -418,6 +479,14 @@ def wifi_signal(dev):
         m = re.search(r"signal:\s*(-?\d+)\s*dBm", run(["iw", "dev", dev, "link"])[1])
         dbm = int(m.group(1)) if m else None
     return pct, dbm
+
+
+def wifi_signal_dbm(dev):
+    """The signal in dBm from iw (worker thread), or None."""
+    if not dev or not have("iw"):
+        return None
+    m = re.search(r"signal:\s*(-?\d+)\s*dBm", run(["iw", "dev", dev, "link"])[1])
+    return int(m.group(1)) if m else None
 
 
 def signal_word(pct):

@@ -18,7 +18,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk, Pango, PangoCairo
 from vyom import ui
 
-from . import system
+from . import live, system
 
 CHEVRON = "\U000f0142"
 REFRESH = "\U000f0450"
@@ -109,6 +109,11 @@ class Circle(Gtk.Button, Hoverable):
         return self.plugin.open_details(self.tile.key, self.tile.open_cmd)
 
     def refresh(self):
+        r = self.tile.live_status()
+        if r is not None:
+            self.show_state(*r)
+            if not (self.tile.key == "hotspot" and r[0]):   # on: who's connected is the command's to say
+                return
         self.plugin.background(self.tile.status, then=lambda r: self.show_state(*r) if isinstance(r, tuple) else None)
 
 
@@ -175,6 +180,7 @@ class Tall(Gtk.Overlay, Hoverable):
         self.add_css_class("k-tall")
         self.add_css_class(css)
         self.level, self.vel, self.muted, self.tick = None, 0.0, False, None
+        self.known = False      # the last refresh came from Vyom's live state
         # fills its column, a little in from the sides: the two stand as a
         # slim pair beside Wi-Fi
         self.set_margin_start(5)
@@ -355,7 +361,13 @@ class Tall(Gtk.Overlay, Hoverable):
         self.plugin.background(lambda: self.source.set(v))
         return False
 
-    def refresh(self):
+    def refresh(self, live_only=False):
+        """From the live state at once when Vyom has it (volume, brightness);
+        else wpctl / brightnessctl in a thread."""
+        now = (live.volume(live.get("volume")) if self.name == "Volume" else
+               live.brightness(live.get("brightness")))
+        self.known = now is not None
+
         def get():
             return self.source.get(), (self.source.device() if hasattr(self.source, "device") else "")
 
@@ -373,6 +385,12 @@ class Tall(Gtk.Overlay, Hoverable):
             self.muted = muted
             if hasattr(self.source, "icon_muted"):
                 set_glyph(self.icon, self.source.icon_muted if muted else self.source.icon)
+        if now is not None:
+            if not self.pending:     # not while you're dragging it
+                show(now)
+            return
+        if live_only:
+            return
         self.plugin.background(get, then=show)
 
 

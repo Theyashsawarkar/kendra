@@ -14,7 +14,7 @@ from vyom import Plugin as Base
 
 from vyom import util
 
-from . import bento, system, vim
+from . import bento, live, system, vim
 
 log = logging.getLogger("vyom.kendra")
 
@@ -98,13 +98,47 @@ class Plugin(Base):
         self.first_seen = {}
         self.fp = None
         self.sampling = None
+        self.probed = None      # prewarm's look at what's here: {tile key: Tile or None, ...}
+        self.watches = []       # live-state watches while the panel is open
+        system.Tile.vyom = vyom  # akashvani's state, in this process
+        self.last_dbm = None
+
+    def prewarm(self):
+        """Builds the card while Vyom is idle after it starts, so even the
+        first opening only shows it: which tiles and sliders this machine
+        has is a dozen commands (nmcli, bluetoothctl, wpctl,
+        powerprofilesctl: 0.5 s), asked in a thread here, never on the way
+        to a frame. The live state's sources start too."""
+        if live.state is not None:
+            live.state.start("wifi", "bluetooth", "power_profiles", "volume", "brightness", "battery")
+        keys = self.conf.get("tiles", DEFAULT_TILES)
+
+        def probe():
+            tiles = {}
+            for k in keys:
+                if k not in tiles:
+                    t = system.make_tile(k, self.conf.get("tile", {}).get(k, {}))
+                    tiles[k] = t if t.available() else None
+            srcs = [(src, css, name) for src, css, name in ((system.Volume(), "volume", "Volume"),
+                                                             (system.Brightness(), "brightness", "Brightness"))
+                    if src.available()]
+            profiles = system.power_profiles()[0] if "power-profile" in keys else []
+            dev = system.wifi_device() if tiles.get("wifi") else None
+            return {"tiles": tiles, "srcs": srcs, "profiles": profiles, "wifi_dev": dev}
+
+        def built(r):
+            if isinstance(r, dict) and self.card is None:
+                self.probed = r
+                self.card = self._build()
+        self.background(probe, then=built)
 
     # ------------------------------------------------------------ building
     def build_card(self):
         if self.card is None:
             self.card = self._build()
         self.refresh_all()
-        self.start_listening()
+        self.start_watching()
+        self.start_sampling()
         if self.focusables:
             GLib.idle_add(self.first_focus)
         return self.card
@@ -130,6 +164,8 @@ class Plugin(Base):
         keys = self.conf.get("tiles", DEFAULT_TILES)
         if key not in keys:
             return None
+        if self.probed is not None and key in self.probed["tiles"]:
+            return self.probed["tiles"][key]
         t = system.make_tile(key, self.conf.get("tile", {}).get(key, {}))
         return t if t.available() else None
 
@@ -144,17 +180,15 @@ class Plugin(Base):
         keys = self.conf.get("tiles", DEFAULT_TILES)
         t = self.tile("wifi")
         if t:
-            if self.sampling is None:
-                self.traffic.dev = system.wifi_device()
-                self.traffic.sample()
-                self.sampling = GLib.timeout_add_seconds(self.traffic.step, self.sample)
+            self.traffic.dev = self.probed["wifi_dev"] if self.probed is not None else system.wifi_device()
             self.wifi = bento.WifiSquare(self, t, self.traffic)
             place(self.wifi, WIFI)
             self.parts.append(self.wifi)
             self.focusables.append(self.wifi.toggle)
-        srcs = [(src, css, name) for src, css, name in ((system.Volume(), "volume", "Volume"),
-                                                         (system.Brightness(), "brightness", "Brightness"))
-                if src.available()]
+        srcs = self.probed["srcs"] if self.probed is not None else \
+            [(src, css, name) for src, css, name in ((system.Volume(), "volume", "Volume"),
+                                                     (system.Brightness(), "brightness", "Brightness"))
+             if src.available()]
         if self.wifi is not None and len(srcs) < 2:
             # one slider (no sound card, or no backlight): Wi-Fi takes the room
             grid.remove(self.wifi)
@@ -184,7 +218,7 @@ class Plugin(Base):
             self.parts.append(self.bt)
             self.focusables.append(self.bt.toggle)
         if "power-profile" in keys:
-            profiles, _cur = system.power_profiles()
+            profiles = self.probed["profiles"] if self.probed is not None else system.power_profiles()[0]
             if profiles:
                 opts = [(pid, name, glyph, "green") for pid, name, glyph in profiles]
                 self.power = bento.Segments(self, "Power mode", opts, self.pick_power,
@@ -252,22 +286,78 @@ class Plugin(Base):
             self.said.set_markup(markup)
 
     def sample(self):
+        """The traffic, every `step` seconds while the panel shows (none
+        while it's hidden: no wakeups for a chart nobody sees)."""
+        if self.panel is None or not self.panel.get_visible():
+            self.sampling = None
+            return False
         self.traffic.sample()
-        if self.wifi is not None and self.panel is not None and self.panel.get_visible():
+        if self.wifi is not None:
             self.wifi.update_speed()
         return True
 
+    def start_sampling(self):
+        if self.wifi is None or self.sampling is not None:
+            return
+        self.traffic.down, self.traffic.up, self.traffic.last = [], [], None
+        self.traffic.sample()
+        # a first speed half a second in, then every step
+        GLib.timeout_add(500, lambda: (self.panel is not None and self.panel.get_visible() and self.traffic.sample(),
+                                       self.wifi.update_speed(), False)[2])
+        self.sampling = GLib.timeout_add_seconds(self.traffic.step, self.sample)
+
+    def start_watching(self):
+        """While the panel shows, the live state redraws what changed."""
+        if live.state is None or self.watches:
+            return
+        for name, fn in (("wifi", lambda _s: self.wifi is not None and self.refresh_wifi(live_only=True)),
+                         ("bluetooth", lambda _s: self.bt is not None and self.refresh_bt(live_only=True)),
+                         ("battery", lambda _s: self.refresh_header()),
+                         ("power_profiles", lambda _s: self.refresh_power(live_only=True)),
+                         ("volume", lambda _s: [t.refresh(live_only=True) for t in self.sliders if t.name == "Volume"]),
+                         ("brightness", lambda _s: [t.refresh(live_only=True) for t in self.sliders
+                                                    if t.name == "Brightness"]),
+                         ("units", lambda _s: self.refresh_live_tiles()),
+                         ("theme", lambda _s: self.refresh_live_tiles())):
+            h = live.state.watch(name, fn)
+            if h:
+                self.watches.append(h)
+        server = getattr(getattr(self.vyom, "plugins", {}).get("akashvani"), "server", None)
+        if server is not None and self.akv_listener not in server.listeners:
+            server.listeners.append(self.akv_listener)
+
+    def akv_listener(self):
+        if self.panel is not None and self.panel.get_visible():
+            self.refresh_live_tiles()
+
+    def stop_watching(self):
+        for h in self.watches:
+            live.state.unwatch(h)
+        self.watches = []
+        server = getattr(getattr(self.vyom, "plugins", {}).get("akashvani"), "server", None)
+        if server is not None and self.akv_listener in server.listeners:
+            server.listeners.remove(self.akv_listener)
+
     def opened(self, args):
-        """Vyom calls this before the card is built; build_card starts the
-        listening once the Bluetooth square exists."""
-        self.start_listening()
+        """Vyom calls this before the card is built; the buds' listening
+        starts after the first frame (refresh_commands)."""
+        self.args = args
 
     def start_listening(self):
         mods = setu_mods()
         if mods and self.bt is not None:
             if self.fp is None:
                 self.fp = mods[1].Scanner()
-            self.background(self.fp.start)
+            self.listening = True
+            fp = self.fp
+
+            def start():
+                fp.start()
+                # closed while BlueZ was starting the scan: its stop found
+                # nothing to stop, so stop it here (else the scan ran on)
+                if not self.listening:
+                    fp.stop()
+            self.background(start)
             # The buds announce left / right / case every few seconds: look
             # again while the panel is open, so the square fills in by itself.
             if getattr(self, "bt_watch", None) is None:
@@ -277,13 +367,21 @@ class Plugin(Base):
         if self.panel is None or not self.panel.get_visible():
             self.bt_watch = None
             return False
-        self.refresh_bt()
+        if self.fp is not None and live.get("bluetooth") is not None:
+            self.background(self.fp.read, then=lambda _r: self.refresh_bt(live_only=True))
+        else:
+            self.refresh_bt()
         return True
 
     def closed(self):
+        self.stop_watching()
+        if self.sampling is not None:
+            GLib.source_remove(self.sampling)
+            self.sampling = None
         if getattr(self, "bt_watch", None) is not None:
             GLib.source_remove(self.bt_watch)
             self.bt_watch = None
+        self.listening = False
         if self.fp is not None:
             self.background(self.fp.stop)
 
@@ -323,31 +421,53 @@ class Plugin(Base):
         if self.notify is None:
             return
         t = self.notify.tile
+        if t.live_status() is not None:
+            self.notify.show(t.level)
+            return
         self.background(t.status, then=lambda r: self.notify.show(t.level) if isinstance(r, tuple) else None)
 
     def pick_power(self, pid):
+        if live.state is not None and live.get("power_profiles"):
+            live.state.set_power_profile(pid, then=lambda _ok: self.refresh_power())
+            return
         self.background(lambda: system.set_power_profile(pid), then=lambda _r: self.refresh_power())
 
     # ------------------------------------------------------------ reading
+    def show_jyoti(self, r):
+        if not isinstance(r, tuple):
+            return
+        t = self.jyoti.tile
+        on, _sub = r
+        self.jyoti.show("off" if not on else (t.level or ("on" if "on" in self.jyoti.buttons else None)))
+
     def refresh_jyoti(self):
         if self.jyoti is None:
             return
         t = self.jyoti.tile
+        r = t.live_status()
+        if r is not None:
+            self.show_jyoti(r)
+            return
+        self.background(t.status, then=self.show_jyoti)
 
-        def show(r):
-            if not isinstance(r, tuple):
-                return
-            on, _sub = r
-            self.jyoti.show("off" if not on else (t.level or ("on" if "on" in self.jyoti.buttons else None)))
-        self.background(t.status, then=show)
-
-    def refresh_power(self):
+    def refresh_power(self, live_only=False):
         if self.power is None:
             return
-        self.background(system.power_profiles, then=lambda r: self.power.show(r[1]) if isinstance(r, tuple) else None)
+        now = live.power(live.get("power_profiles"))
+        if now is not None:
+            self.power.show(now[1])
+        elif not live_only:
+            self.background(system.power_profiles, then=lambda r: self.power.show(r[1]) if isinstance(r, tuple) else None)
 
-    def refresh_wifi(self):
+    def refresh_wifi(self, live_only=False):
         w = self.wifi
+        now = live.wifi(live.get("wifi"))
+        if now is not None:
+            on, sub, pct = now
+            w.show_state(on, sub, pct, self.last_dbm if on else None)
+            return
+        if live_only:
+            return
 
         def get():
             on, sub = w.tile.status()
@@ -355,17 +475,38 @@ class Plugin(Base):
             return on, sub, pct, dbm
         self.background(get, then=lambda r: w.show_state(*r) if isinstance(r, tuple) else None)
 
-    def refresh_bt(self):
+    def fetch_dbm(self):
+        """The signal in dBm, only iw knows it: after the first frame."""
+        snap = live.wifi(live.get("wifi"))
+        if snap is not None and snap[0] and self.traffic.dev:
+            self.background(lambda: system.wifi_signal_dbm(self.traffic.dev), then=self._dbm)
+
+    def _dbm(self, d):
+        if isinstance(d, int) and d != self.last_dbm:
+            self.last_dbm = d
+            self.refresh_wifi(live_only=True)
+
+    def refresh_bt(self, live_only=False):
         b = self.bt
+        bt_now = live.bluetooth(live.get("bluetooth"))
+        ub_now = live.upower_batteries(live.get("battery"))
+        if bt_now is None and live_only:
+            return
 
         def get():
-            on, _sub = b.tile.status()
+            if bt_now is not None:
+                on, devs = bt_now
+            else:
+                on, _sub = b.tile.status()
+                devs = system.bt_devices() if on else []
             if not on:
                 return on, [], None
-            devs = system.bt_devices()
             mods = setu_mods()
-            ubats = mods[0].upower_batteries() if mods else {}
-            readings = self.fp.read() if (self.fp is not None and mods) else {}
+            ubats = ub_now if ub_now is not None else mods[0].upower_batteries() if mods else {}
+            # the buds' adverts: BlueZ's whole object tree (30 ms to read),
+            # so from memory here; bt_tick reads it again in a thread
+            readings = ({} if self.fp is None or not mods else
+                        dict(getattr(self.fp, "readings", {})) if bt_now is not None else self.fp.read())
             memo = util.load_state("setu-case", {})
             recent = dict(util.load_state("setu-last-connected", {}))
             now = time.time()
@@ -397,6 +538,9 @@ class Plugin(Base):
                 self.last_parts = pick.get("parts")
                 log.debug("kendra: bluetooth %s %s", pick["name"], pick.get("parts") or f"{pick.get('battery')}%")
             return on, devs, pick
+        if bt_now is not None:      # all from memory: no thread needed
+            b.show_state(*get())
+            return
         self.background(get, then=lambda r: b.show_state(*r) if isinstance(r, tuple) else None)
 
     def _header(self):
@@ -441,6 +585,65 @@ class Plugin(Base):
         return True
 
     def refresh_all(self):
+        """What's in the live state shows at once; what only a command can
+        tell (your own tiles' status commands, the wallpaper) is asked
+        after the panel's first frame, so it never holds the opening up."""
+        self.refresh_header()
+        if self.wifi is not None:
+            self.refresh_wifi()
+        if self.bt is not None:
+            self.refresh_bt()
+        self.refresh_power()
+        for s in self.sliders:
+            s.refresh(live_only=live.state is not None)
+        self.refresh_live_tiles()
+        clock = self.panel.get_frame_clock() if self.panel is not None else None
+        if clock is None:
+            GLib.idle_add(lambda: (self.refresh_commands(), False)[1])
+            return
+
+        def painted(c, *_):
+            c.disconnect(hid[0])
+            GLib.idle_add(lambda: (self.refresh_commands(), False)[1])
+        hid = [clock.connect("after-paint", painted)]
+
+    def refresh_live_tiles(self):
+        """Tiles whose state is in memory (live = ..., built-ins on Vyom's
+        live state): at once, before the first frame. True for each shown."""
+        if self.jyoti is not None:
+            r = self.jyoti.tile.live_status()
+            if r is not None:
+                self.show_jyoti(r)
+        if self.notify is not None and self.notify.tile.live_status() is not None:
+            self.notify.show(self.notify.tile.level)
+        for p in self.parts:
+            if isinstance(p, bento.Circle):
+                r = p.tile.live_status()
+                if r is not None:
+                    p.show_state(*r)
+
+    def refresh_commands(self):
+        if self.panel is None or not self.panel.get_visible():
+            return
+        self.start_listening()
+        if self.fp is not None and self.bt is not None and live.get("bluetooth") is not None:
+            self.background(self.fp.read, then=lambda _r: self.refresh_bt(live_only=True))
+        if self.wifi is not None:
+            self.fetch_dbm()
+        self.refresh_jyoti()
+        self.refresh_notify()
+        for p in self.parts:
+            if isinstance(p, bento.Circle):
+                p.refresh()
+        for s in self.sliders:      # a slider the live state doesn't know (an older Vyom)
+            if not s.known:
+                s.refresh()
+        if self.wall is not None:
+            self.wall.refresh()
+        if self.wifi is not None:
+            self.say(self.wifi.words())
+
+    def refresh_header(self):
         self.hello.set_label(f"{system.greeting()}, {system.user_name()}")
         bat = system.battery()
         bits = []
@@ -454,22 +657,6 @@ class Plugin(Base):
         if up:
             bits.append(up)
         self.meta.set_label(" · ".join(bits))
-        if self.wifi is not None:
-            self.refresh_wifi()
-        if self.bt is not None:
-            self.refresh_bt()
-        self.refresh_jyoti()
-        self.refresh_notify()
-        self.refresh_power()
-        for p in self.parts:
-            if isinstance(p, bento.Circle):
-                p.refresh()
-        for s in self.sliders:
-            s.refresh()
-        if self.wall is not None:
-            self.wall.refresh()
-        if self.wifi is not None:
-            GLib.idle_add(lambda: (self.say(self.wifi.words()), False)[1])
 
     def focused_tile(self):
         """What o / Shift+Enter opens: the focused circle or square."""
@@ -572,3 +759,5 @@ class Plugin(Base):
 
     def v_refresh(self, _n, _a):
         self.refresh_all()
+        for s in self.sliders:
+            s.refresh()
