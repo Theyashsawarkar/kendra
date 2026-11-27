@@ -502,16 +502,23 @@ def signal_word(pct):
 
 
 class Traffic:
-    """Download and upload speed, one sample every `step` seconds for the
-    last minute, read from the device's byte counters (no tool, nothing on
-    the network). Kept in memory by the resident daemon, so the panel opens
-    on a full minute."""
+    """Download and upload speed, one value every `step` seconds for the
+    last minute. With Vyom 0.10 they're what Vyom's live state has read from
+    the device's byte counters since it started (load()), so the panel
+    opens on the whole minute; with an older Vyom, sampled here (the same
+    counters: no tool, nothing on the network) while the panel shows."""
 
     def __init__(self, step=2, keep=30):
         self.step, self.keep = step, keep
         self.down, self.up = [], []
         self.last = None
         self.dev = None
+
+    def load(self, hist):
+        """Takes the speeds from Vyom's net history ({"rx": [...], "tx": [...]})."""
+        self.down = list(hist.get("rx") or [])[-self.keep:]
+        self.up = list(hist.get("tx") or [])[-self.keep:]
+        self.last = None
 
     def counters(self):
         try:

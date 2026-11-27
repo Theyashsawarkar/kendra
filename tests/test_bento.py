@@ -21,6 +21,16 @@ class PickDevice(unittest.TestCase):
         self.assertIsNone(system.pick_device([], {}))
 
 
+class Traffic(unittest.TestCase):
+    def test_load_takes_the_last_minute(self):
+        t = system.Traffic()
+        t.load({"rx": list(range(40)), "tx": [1.0] * 40})
+        self.assertEqual(len(t.down), t.keep)
+        self.assertEqual(t.down[-1], 39)
+        t.load({"rx": [], "tx": []})
+        self.assertEqual(t.down, [])
+
+
 class Words(unittest.TestCase):
     def test_wallpaper_name(self):
         self.assertEqual(system.wallpaper_name("/w/wallpaper-20261126-RFHilo.jpg"), "RF Hilo")

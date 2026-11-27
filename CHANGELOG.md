@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **The Wi-Fi chart opens on the whole last minute** instead of starting empty each time: with Vyom 0.10 the speeds come from Vyom's live state, which reads the card's counters all along (every 2 s, the chart's own step), and move on with its readings while the panel shows; kendra reads nothing itself. With an older Vyom it samples while it shows, as before.
+
 ## v1.1.0 -- 2026-11-27
 
 - **Opens instantly, every time** (first frame 50-100 ms, was 125-200 ms; the first opening 100 ms, was 0.6-0.85 s). With Vyom's live state (Vyom 0.9, ADR 12 there) Wi-Fi, Bluetooth and its devices' batteries, the power mode, volume, brightness, the hotspot (off) and the theme are read from memory, kept current by their daemons' own signals while the panel shows; nothing runs on the way to the first frame (it ran about 26 commands). What only a command can tell (your own tiles' `status`, the Wi-Fi signal in dBm, the wallpaper) is asked after the first frame. With an older Vyom it asks the old way.

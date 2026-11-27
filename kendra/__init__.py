@@ -98,6 +98,7 @@ class Plugin(Base):
         self.first_seen = {}
         self.fp = None
         self.sampling = None
+        self.net_watch = None   # Vyom's net history moving the chart on while the panel shows
         self.probed = None      # prewarm's look at what's here: {tile key: Tile or None, ...}
         self.watches = []       # live-state watches while the panel is open
         system.Tile.vyom = vyom  # akashvani's state, in this process
@@ -285,9 +286,24 @@ class Plugin(Base):
         if getattr(self, "said", None) is not None:
             self.said.set_markup(markup)
 
+    def net_history(self):
+        """The chart's minute from Vyom's live state (None with an older Vyom)."""
+        return live.net(self.traffic.dev, self.traffic.step, self.traffic.step * self.traffic.keep)
+
+    def net_reading(self, _none=None):
+        """Vyom read the counters again (every 2 s, its own timer): the
+        chart moves on, while the panel shows."""
+        if self.wifi is None or self.panel is None or not self.panel.get_visible():
+            return
+        h = self.net_history()
+        if h is not None:
+            self.traffic.load(h)
+            self.wifi.update_speed()
+
     def sample(self):
         """The traffic, every `step` seconds while the panel shows (none
-        while it's hidden: no wakeups for a chart nobody sees)."""
+        while it's hidden: no wakeups for a chart nobody sees). Only with a
+        Vyom that keeps no net history."""
         if self.panel is None or not self.panel.get_visible():
             self.sampling = None
             return False
@@ -297,8 +313,16 @@ class Plugin(Base):
         return True
 
     def start_sampling(self):
-        if self.wifi is None or self.sampling is not None:
+        if self.wifi is None or self.sampling is not None or self.net_watch is not None:
             return
+        h = self.net_history()
+        if h is not None:
+            # the whole minute at once, then Vyom's own readings move it on
+            self.traffic.load(h)
+            self.wifi.update_speed()
+            self.net_watch = live.state.watch("net", self.net_reading)
+            if self.net_watch is not None:
+                return
         self.traffic.down, self.traffic.up, self.traffic.last = [], [], None
         self.traffic.sample()
         # a first speed half a second in, then every step
@@ -375,6 +399,9 @@ class Plugin(Base):
 
     def closed(self):
         self.stop_watching()
+        if self.net_watch is not None:
+            live.state.unwatch(self.net_watch)
+            self.net_watch = None
         if self.sampling is not None:
             GLib.source_remove(self.sampling)
             self.sampling = None

@@ -24,6 +24,19 @@ def get(name):
         return None
 
 
+def net(dev, step, window):
+    """{"rx": [...], "tx": [...], ...}: the last `window` seconds of the
+    device's speeds in `step`-second bins, kept by Vyom since it started
+    (Vyom 0.10's live.history), so the chart opens full. None with an older
+    Vyom or without NetworkManager: then kendra samples while it shows."""
+    if state is None or not hasattr(state, "history"):
+        return None
+    try:
+        return state.history("net", dev=dev, step=step, window=window)
+    except Exception:    # noqa: BLE001
+        return None
+
+
 def wifi(snap):
     """(on, subtitle, signal percent) like Wifi.status() and wifi_signal()."""
     if not snap or not snap.get("running") or not snap.get("device"):
