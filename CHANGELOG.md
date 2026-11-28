@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- Website: pranali joins the family list in the footer; the site builder passes ruff.
+
 ## v1.2.0 -- 2026-11-27
 
 - **The Wi-Fi chart opens on the whole last minute** instead of starting empty each time: with Vyom 0.10 the speeds come from Vyom's live state, which reads the card's counters all along (every 2 s, the chart's own step), and move on with its readings while the panel shows; kendra reads nothing itself. With an older Vyom it samples while it shows, as before.
