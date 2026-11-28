@@ -47,3 +47,13 @@ class Conversions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Connections(unittest.TestCase):
+    def test_primary_first_hotspot_out_older_vyom_none(self):
+        snap = {"running": True, "connections": [
+            {"name": "Home", "type": "wifi"}, {"name": "Office VPN", "type": "vpn", "primary": True},
+            {"name": "Vayu Hotspot", "type": "hotspot"}]}
+        self.assertEqual([c["name"] for c in live.connections(snap)], ["Office VPN", "Home"])
+        self.assertIsNone(live.connections({"running": True, "wired": "Wired connection 1"}))
+        self.assertIsNone(live.connections(None))

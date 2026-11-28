@@ -25,6 +25,7 @@ CHEVRON = "\U000f0142"
 NET_GLYPHS = {"wifi": "\U000f05a9", "ethernet": "\U000f0200", "usb": "\U000f0553", "mobile": "\U000f08be",
               "bluetooth": "\U000f00af", "vpn": "\U000f099d", "wireguard": "\U000f099d", "bridge": "\U000f0317"}
 NET_OTHER = "\U000f06f3"
+WIFI_OFF = "\U000f05aa"
 REFRESH = "\U000f0450"
 NERD = "JetBrainsMono Nerd Font Propo"
 
@@ -500,13 +501,33 @@ class WifiSquare(Square):
     kind, the download speed big with upload beside it, and the last minute
     as two lines (download sky, upload mauve), each with its peak marked.
     The connection carrying your traffic shows; "+1" (top right) shows the
-    next one. The circle stays Wi-Fi's on / off."""
+    next one. Its big icon is the connection's kind; Wi-Fi's own on / off
+    is the small pill beside the arrow."""
 
     def __init__(self, plugin, tile, traffic):
         super().__init__(plugin, tile, "sky")
         self.traffic = traffic
         self.add_css_class("wifi")
         self.conns, self.idx, self.connected = [], 0, False
+        # The square's big icon is what you're on (a cable, Wi-Fi, a phone, a
+        # modem, a VPN): the glyph alone, green while online (no ring). Wi-Fi's
+        # own on / off moves to a small pill beside the arrow: one press (or
+        # Enter on it) away, but no longer what the square seems to be about.
+        top = self.toggle.get_parent()
+        top.remove(self.toggle)
+        self.icon = glyph(NET_GLYPHS["wifi"], 34, "k-net-icon")
+        self.icon.set_valign(Gtk.Align.CENTER)
+        top.prepend(self.icon)
+        self.toggle.remove_css_class("k-sq-toggle")
+        self.toggle.add_css_class("k-wifi-pill")
+        self.toggle.set_size_request(-1, 26)
+        self.pill_word = ui.label("Off", "k-wifi-pill-word")
+        pill = Gtk.Box(spacing=4, valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+        pill.append(glyph(NET_GLYPHS["wifi"], 14))
+        pill.append(self.pill_word)
+        self.toggle.set_child(pill)
+        self.toggle.set_tooltip_text("Wi-Fi on / off (Enter)")
+        top.insert_child_after(self.toggle, self.extra)
         self.state = (None, "", None, None)
         self.more = Gtk.Button(label="")
         self.more.add_css_class("k-more")
@@ -517,9 +538,6 @@ class WifiSquare(Square):
         head = Gtk.Box(spacing=6)
         self.bars = bars(0)
         head.append(self.bars)
-        self.kind_glyph = ui.label("", "k-net-glyph", valign=Gtk.Align.CENTER)
-        self.kind_glyph.set_visible(False)
-        head.append(self.kind_glyph)
         self.ssid = ui.label("", "k-sq-name", xalign=0, hexpand=True, ellipsize=Pango.EllipsizeMode.END,
                              max_width_chars=16)
         head.append(self.ssid)
@@ -555,10 +573,12 @@ class WifiSquare(Square):
         self.conns = []
         self.more.set_visible(False)
         self.kind.set_visible(False)
-        self.kind_glyph.set_visible(False)
-        self.bars.set_visible(True)
         connected = bool(on and sub and not sub.startswith("On ·") and sub != "Off")
         self.connected = connected
+        wired = bool(on is not None and sub and "ethernet" in sub.lower())   # an older Vyom: "On · ethernet in use"
+        self.set_icon(NET_GLYPHS["ethernet"] if wired else NET_GLYPHS["wifi"] if on else WIFI_OFF,
+                      connected or wired)
+        self.bars.set_visible(not wired)
         lvl, word = system.signal_word(pct) if connected else (0, "")
         self.bars.level = lvl
         self.bars.queue_draw()
@@ -581,8 +601,8 @@ class WifiSquare(Square):
         self.bars.level = lvl
         self.bars.queue_draw()
         self.bars.set_visible(wifi)
-        self.kind_glyph.set_label(NET_GLYPHS.get(kind, NET_OTHER))
-        self.kind_glyph.set_visible(not wifi)
+        self.set_icon(NET_GLYPHS.get(kind, NET_OTHER), True)
+        self.icon.set_tooltip_text(f"On {c.get('label') or kind}")
         self.ssid.set_label(name)
         self.kind.set_label(c.get("label") or kind.capitalize())
         self.kind.set_visible(True)
@@ -607,6 +627,14 @@ class WifiSquare(Square):
             self.traffic.down, self.traffic.up, self.traffic.last = [], [], None
             self.plugin.reload_traffic()
         self.update_speed()
+
+    def show_on(self, on):
+        super().show_on(on)
+        self.pill_word.set_label("On" if on else "Off")
+
+    def set_icon(self, text, online):
+        set_glyph(self.icon, text)
+        (self.icon.add_css_class if online else self.icon.remove_css_class)("online")
 
     def next_connection(self):
         if len(self.conns) > 1:

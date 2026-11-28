@@ -5,6 +5,8 @@ Newest first. Releases are tags (`vX.Y.Z`).
 ## Unreleased
 
 - **The network square shows any connection, not only Wi-Fi** (Vyom 0.12): on a cable it shows the cable (its icon, its name, an **Ethernet** badge, its speed and the last minute's chart from that device) instead of "Ethernet in use" and an empty chart; the same for a phone over USB, mobile broadband, Bluetooth and a VPN (over what it rides on). The connection carrying your traffic shows; with more than one, **+1** (top right) or the new key `n` shows the next. Wi-Fi keeps its signal bars; the circle still turns Wi-Fi on and off. With an older Vyom the square is as before.
+- **The square's big icon is the connection, not the Wi-Fi switch**: a cable, Wi-Fi, a phone, a modem or a VPN shield, the glyph alone (no ring), green while online; the one carrying your traffic first (a VPN before the Wi-Fi or cable it rides on). Wi-Fi's on / off is now a small **On / Off** pill beside the arrow (filled sky while on; Enter on it, or a click, as before).
+- **Where you are is brighter glass**, not a white ring around the focused control (Spatial), on every tile.
 - The line under the cards can no longer widen the panel (a long one ellipsizes), nor can a long network name.
 - `iw` is asked for the signal only while Wi-Fi is connected (not for a cable).
 

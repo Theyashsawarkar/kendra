@@ -57,7 +57,11 @@ def connections(snap):
     alone then."""
     if not snap or not snap.get("running") or snap.get("connections") is None:
         return None
-    return [dict(c) for c in snap["connections"] if c.get("type") != "hotspot"]
+    conns = [dict(c) for c in snap["connections"] if c.get("type") != "hotspot"]
+    # the one carrying your traffic shows first, even a VPN (over the Wi-Fi
+    # or cable it rides on, which comes next)
+    conns.sort(key=lambda c: not c.get("primary"))
+    return conns
 
 
 def bluetooth(snap):
