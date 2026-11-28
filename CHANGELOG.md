@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **A tile's `file:` state follows changes while the panel is open**: kendra watches the folder of each `file:` a tile names (one monitor per folder, told by the kernel, no polling) and redraws the tile when the file is written or replaced. Before, it read the file only on opening, so a change made elsewhere (Jyoti set from the phone, a script) showed only the next time.
+
 ## v1.5.0 -- 2026-11-28
 
 - **Open beside other panels, kept per workspace** (Vyom 0.13, ADR 17): quick settings now open beside the launcher or any centred panel, and stay on the workspace you opened them on. When you leave that workspace the buds' Bluetooth listening and the chart's sampling stop; when you come back the card is as you left it, brought up to date (`parked()` / `unparked()`).

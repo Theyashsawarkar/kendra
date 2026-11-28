@@ -5,9 +5,10 @@ top-right corner. Opens with the last known state, then every tile
 refreshes in a background thread, so slow tools never hold it up.
 """
 import logging
+import os
 import time
 
-from gi.repository import GLib, Gtk, Pango
+from gi.repository import Gio, GLib, Gtk, Pango
 
 from vyom import Hint, ui
 from vyom import Plugin as Base
@@ -102,6 +103,7 @@ class Plugin(Base):
         self.net_watch = None   # Vyom's net history moving the chart on while the panel shows
         self.probed = None      # prewarm's look at what's here: {tile key: Tile or None, ...}
         self.watches = []       # live-state watches while the panel is open
+        self.file_watches = []  # folder monitors for your tiles' `file:` state, while open
         system.Tile.vyom = vyom  # akashvani's state, in this process
         self.last_dbm = None
 
@@ -345,6 +347,7 @@ class Plugin(Base):
 
     def start_watching(self):
         """While the panel shows, the live state redraws what changed."""
+        self.watch_state_files()
         if live.state is None or self.watches:
             return
         for name, fn in (("wifi", lambda _s: self.wifi is not None and self.refresh_wifi(live_only=True)),
@@ -363,6 +366,36 @@ class Plugin(Base):
         if server is not None and self.akv_listener not in server.listeners:
             server.listeners.append(self.akv_listener)
 
+    def watch_state_files(self):
+        """Your tiles' `file:` state (live = ["file:..."]): a change made
+        elsewhere (a phone, a script) redraws the tile while the panel is
+        open. One monitor per folder, told by the kernel; no polling."""
+        if self.file_watches:
+            return
+        paths = set()
+        for t in [getattr(self.jyoti, "tile", None), getattr(self.notify, "tile", None),
+                  *[getattr(p, "tile", None) for p in self.parts]]:
+            spec = getattr(t, "conf", {}).get("live") if t is not None else None
+            for item in [spec] if isinstance(spec, str) else spec or ():
+                if isinstance(item, str) and item.startswith("file:"):
+                    paths.add(system.expand(item[5:]))
+        folders = {}
+        for path in paths:
+            folders.setdefault(os.path.dirname(path), set()).add(path)
+        for folder, wanted in folders.items():
+            try:
+                m = Gio.File.new_for_path(folder).monitor_directory(Gio.FileMonitorFlags.WATCH_MOVES, None)
+            except GLib.Error as e:
+                log.debug("kendra: can't watch %s: %s", folder, e.message)
+                continue
+
+            def changed(_m, f, other, _ev, wanted=wanted):
+                names = {x.get_path() for x in (f, other) if x is not None}
+                if names & wanted and self.panel is not None and self.panel.get_visible():
+                    GLib.idle_add(lambda: (self.refresh_live_tiles(), False)[1])
+            m.connect("changed", changed)
+            self.file_watches.append(m)
+
     def akv_listener(self):
         if self.panel is not None and self.panel.get_visible():
             self.refresh_live_tiles()
@@ -371,6 +404,9 @@ class Plugin(Base):
         for h in self.watches:
             live.state.unwatch(h)
         self.watches = []
+        for m in self.file_watches:
+            m.cancel()
+        self.file_watches = []
         server = getattr(getattr(self.vyom, "plugins", {}).get("akashvani"), "server", None)
         if server is not None and self.akv_listener in server.listeners:
             server.listeners.remove(self.akv_listener)
