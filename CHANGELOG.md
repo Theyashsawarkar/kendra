@@ -4,6 +4,7 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+- Vyom 0.11 draws kept panels once off screen when it starts (so quick settings' first opening is as quick as the next): that drawing no longer starts the Bluetooth earbuds' scan or the status commands, which are only for a panel you look at.
 - Website: pranali joins the family list in the footer; the site builder passes ruff.
 
 ## v1.2.0 -- 2026-11-27

@@ -650,7 +650,9 @@ class Plugin(Base):
                     p.show_state(*r)
 
     def refresh_commands(self):
-        if self.panel is None or not self.panel.get_visible():
+        # Not for Vyom's warm-up (0.11: kept panels are drawn once, off
+        # screen, at start): no Bluetooth scan or status commands for it.
+        if self.panel is None or not self.panel.get_visible() or getattr(self.panel, "warming", False):
             return
         self.start_listening()
         if self.fp is not None and self.bt is not None and live.get("bluetooth") is not None:
