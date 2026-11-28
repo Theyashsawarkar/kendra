@@ -53,7 +53,7 @@ kendra is quick settings for [Vyom](https://github.com/Theyashsawarkar/vyom): on
 A bento of rounded glass under the bar's top-right corner, every part sized for what it does:
 
 - **The header**: your initial inside a ring that is the battery (green, yellow at 30%, red at 15%), a greeting, the battery and uptime, and **lock and power** (power in red; `Space l` and `Space p` do the same).
-- **The Wi-Fi square**: signal bars and the network, the **download speed big with upload beside it**, and the **last minute as two lines** (download and upload), each with its peak, read from the card's own counters. With Vyom 0.10 Vyom keeps that minute all along (its live state reads the counters every 2 s), so the chart opens full. The circle toggles Wi-Fi; the arrow, the name or a right click opens [tarang](https://github.com/Theyashsawarkar/tarang).
+- **The network square**: the connection carrying your traffic, whatever it runs over: Wi-Fi's signal bars, or the icon of a cable, a phone over USB, a modem, Bluetooth or a VPN; its name and a badge (Wi-Fi, Ethernet, USB, Mobile, VPN…), the **download speed big with upload beside it**, and the **last minute as two lines** (download and upload), each with its peak, read from that device's own counters. With Vyom 0.10 Vyom keeps that minute all along (its live state reads the counters every 2 s; every kind of connection with Vyom 0.12), so the chart opens full. On more than one connection (a cable and Wi-Fi, Wi-Fi and a VPN) **+1** at the top, or `n`, shows the next. The circle toggles Wi-Fi; the arrow, the name or a right click opens [tarang](https://github.com/Theyashsawarkar/tarang).
 - **The Bluetooth square** shows the device that matters: one at 20% or less (the lowest), else the one connected most recently. **Earbuds show Left and Right** in big light numbers with a line each, the **case** under them and what's charging (from the buds' own Fast Pair broadcast, through [setu](https://github.com/Theyashsawarkar/setu) when it's installed); anything else its one battery, red when low. The rest are "+N more", which opens setu.
 - **Volume and brightness as glass columns of liquid**: filled to the level, with a slow moving surface that sloshes when it changes (only while the panel shows). Drag, scroll or `h` / `l`; right click on volume mutes, and the liquid turns grey and still.
 - **Pills for what you choose one of**: Jyoti (Off, Akhaṇḍa, Nandādīpa), notifications (Active, Silent, Do not disturb) and power mode (Saver, Balanced, Performance). Icons only; the chosen one grows into its colour and names itself.
@@ -112,8 +112,9 @@ Vyom's vim keys work too: `?` and `Space ?` list every key, `Space Space` is the
 | `0` | Set the focused slider to its minimum |
 | `$` | Set the focused slider to its maximum |
 | `Enter` | Toggle the focused setting (on a slider: mute it) |
-| `o` | Open the focused tile's details (Wi-Fi in tarang, Bluetooth in setu) |
+| `o` | Open the focused tile's details (the network in tarang, Bluetooth in setu) |
 | `m` | Toggle mute on the sound output |
+| `n` | Show the next network connection in the network square (cable, Wi-Fi, VPN…) |
 
 **Leader (Space)**
 
@@ -121,7 +122,7 @@ Vyom's vim keys work too: `?` and `Space ?` list every key, `Space Space` is the
 |---|---|
 | `Space l` | Lock the screen |
 | `Space p` | Open the power menu |
-| `Space g w` | Open the Wi-Fi panel (tarang) |
+| `Space g w` | Open the network panel (tarang: Wi-Fi, Ethernet, every connection) |
 | `Space g b` | Open the Bluetooth panel (setu) |
 | `Space g h` | Open the hotspot (tarang's Hotspot tab) |
 | `Space g p` | Open the power menu (vishram) |

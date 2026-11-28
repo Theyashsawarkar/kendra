@@ -114,3 +114,9 @@ button.k-wall { padding: 0; border-radius: 999px; border: 1px solid alpha(white,
 .k-say { padding: 6px 14px; border-radius: 999px; background: alpha(white, 0.04); color: @subtext0; font-size: 11px; margin-bottom: 2px; }
 /* the bars draw their own rim, on their own shape */
 .k-bento .k-tall.sel { outline: none; }
+
+/* the network square, whatever it runs over: the connection's glyph (a cable, a phone,
+   a modem, a VPN; Wi-Fi keeps its bars) and its kind as a quiet badge */
+.k-net-glyph { font-family: "JetBrainsMono Nerd Font Propo"; font-size: 15px; color: @green; min-width: 18px; }
+.k-net-kind { color: @subtext0; font-size: 10.5px; font-weight: 650; padding: 1px 8px; border-radius: 999px;
+  background: alpha(white, 0.07); border: 1px solid alpha(white, 0.10); }

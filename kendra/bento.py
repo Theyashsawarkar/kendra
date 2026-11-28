@@ -21,6 +21,10 @@ from vyom import ui
 from . import live, system
 
 CHEVRON = "\U000f0142"
+# a connection's kind: its glyph (Material Design Icons) for the network square
+NET_GLYPHS = {"wifi": "\U000f05a9", "ethernet": "\U000f0200", "usb": "\U000f0553", "mobile": "\U000f08be",
+              "bluetooth": "\U000f00af", "vpn": "\U000f099d", "wireguard": "\U000f099d", "bridge": "\U000f0317"}
+NET_OTHER = "\U000f06f3"
 REFRESH = "\U000f0450"
 NERD = "JetBrainsMono Nerd Font Propo"
 
@@ -476,20 +480,52 @@ def bars(level, size=(18, 14)):
     return area
 
 
+def speed_text(mbps):
+    """A link's speed in Mb/s, in words ("1 Gb/s", "100 Mb/s"); "" unknown."""
+    try:
+        v = float(mbps or 0)
+    except (TypeError, ValueError):
+        return ""
+    if v <= 0:
+        return ""
+    if v >= 1000:
+        g = v / 1000
+        return f"{g:.0f} Gb/s" if g == int(g) else f"{g:.1f} Gb/s"
+    return f"{v:.0f} Mb/s"
+
+
 class WifiSquare(Square):
-    """The network: signal bars and its name, the download speed big with
-    upload beside it, and the last minute as two lines (download sky,
-    upload mauve), each with its peak marked."""
+    """The network you're on, whatever it runs over: Wi-Fi's signal bars or
+    the connection's glyph (a cable, a phone, a modem, a VPN), its name and
+    kind, the download speed big with upload beside it, and the last minute
+    as two lines (download sky, upload mauve), each with its peak marked.
+    The connection carrying your traffic shows; "+1" (top right) shows the
+    next one. The circle stays Wi-Fi's on / off."""
 
     def __init__(self, plugin, tile, traffic):
         super().__init__(plugin, tile, "sky")
         self.traffic = traffic
         self.add_css_class("wifi")
+        self.conns, self.idx, self.connected = [], 0, False
+        self.state = (None, "", None, None)
+        self.more = Gtk.Button(label="")
+        self.more.add_css_class("k-more")
+        self.more.connect("clicked", lambda *_: self.next_connection())
+        self.more.set_can_focus(False)
+        self.more.set_visible(False)
+        self.extra.append(self.more)
         head = Gtk.Box(spacing=6)
         self.bars = bars(0)
         head.append(self.bars)
-        self.ssid = ui.label("", "k-sq-name", xalign=0, hexpand=True, ellipsize=Pango.EllipsizeMode.END)
+        self.kind_glyph = ui.label("", "k-net-glyph", valign=Gtk.Align.CENTER)
+        self.kind_glyph.set_visible(False)
+        head.append(self.kind_glyph)
+        self.ssid = ui.label("", "k-sq-name", xalign=0, hexpand=True, ellipsize=Pango.EllipsizeMode.END,
+                             max_width_chars=16)
         head.append(self.ssid)
+        self.kind = ui.label("", "k-net-kind", valign=Gtk.Align.CENTER)
+        self.kind.set_visible(False)
+        head.append(self.kind)
         big = Gtk.Box(spacing=4)
         self.speed = ui.label("—", "k-big", valign=Gtk.Align.BASELINE)
         self.unit = ui.label("", "k-unit", valign=Gtk.Align.BASELINE)
@@ -509,10 +545,20 @@ class WifiSquare(Square):
             self.body.append(w)
         self.pct = self.dbm = None
 
-    def show_state(self, on, sub, pct=None, dbm=None):
+    def show_state(self, on, sub, pct=None, dbm=None, conns=None):
+        self.state = (on, sub, pct, dbm)
         self.show_on(on)
         self.pct, self.dbm = pct, dbm
-        connected = on and sub and not sub.startswith("On ·") and sub != "Off"
+        if conns:
+            self.show_connection(on, conns, pct, dbm)
+            return
+        self.conns = []
+        self.more.set_visible(False)
+        self.kind.set_visible(False)
+        self.kind_glyph.set_visible(False)
+        self.bars.set_visible(True)
+        connected = bool(on and sub and not sub.startswith("On ·") and sub != "Off")
+        self.connected = connected
         lvl, word = system.signal_word(pct) if connected else (0, "")
         self.bars.level = lvl
         self.bars.queue_draw()
@@ -520,9 +566,58 @@ class WifiSquare(Square):
         self.sub = (f"{sub} · {word.lower()}" + (f", {dbm} dBm" if dbm is not None else "")) if connected else (sub or "Off")
         self.update_speed()
 
+    def show_connection(self, on, conns, pct, dbm):
+        """One connection of several (the main one unless "+1" moved on):
+        the same square whatever it runs over."""
+        self.conns = conns
+        self.idx = self.idx if 0 <= self.idx < len(conns) else 0
+        c = conns[self.idx]
+        kind = c.get("type") or "other"
+        self.connected = True
+        self.add_css_class("on")      # online, whatever the Wi-Fi circle says
+        wifi = kind == "wifi"
+        name = (c.get("ssid") or c.get("name")) if wifi else (c.get("name") or c.get("device") or "Connected")
+        lvl, word = system.signal_word(c.get("strength", pct)) if wifi else (0, "")
+        self.bars.level = lvl
+        self.bars.queue_draw()
+        self.bars.set_visible(wifi)
+        self.kind_glyph.set_label(NET_GLYPHS.get(kind, NET_OTHER))
+        self.kind_glyph.set_visible(not wifi)
+        self.ssid.set_label(name)
+        self.kind.set_label(c.get("label") or kind.capitalize())
+        self.kind.set_visible(True)
+        others = [o for i, o in enumerate(conns) if i != self.idx]
+        self.more.set_label(f"+{len(others)}")
+        self.more.set_visible(bool(others))
+        self.more.set_tooltip_text("Also on: " + ", ".join(f"{o.get('name')} ({o.get('label')})" for o in others)
+                                   + " · click to show it")
+        if wifi:
+            detail = word.lower() + (f", {dbm} dBm" if dbm is not None else "")
+        elif kind in ("vpn", "wireguard"):
+            detail = f"over {c['via']}" if c.get("via") else ""
+        elif kind == "mobile":
+            detail = f"operator {c['operator']}" if c.get("operator") else ""
+        else:
+            detail = speed_text(c.get("speed"))
+        standby = "" if (c.get("primary") or self.idx == 0) else " · standby"
+        self.sub = name + (f" · {detail}" if detail else "") + standby
+        dev = c.get("vpn_device") or c.get("device") or c.get("via_device") or None
+        if dev and dev != self.traffic.dev:
+            self.traffic.dev = dev
+            self.traffic.down, self.traffic.up, self.traffic.last = [], [], None
+            self.plugin.reload_traffic()
+        self.update_speed()
+
+    def next_connection(self):
+        if len(self.conns) > 1:
+            self.idx = (self.idx + 1) % len(self.conns)
+            on, sub, pct, dbm = self.state
+            self.show_state(on, sub, pct, dbm, self.conns)
+            self.plugin.say(self.words())
+
     def update_speed(self):
         t = self.traffic
-        if self.on and t.down:
+        if self.connected and t.down:
             n, u = system.rate(t.down[-1])
             self.speed.set_label(n)
             self.unit.set_label(f"↓ {u}")
@@ -536,22 +631,25 @@ class WifiSquare(Square):
             self.speed.set_label("—")
             self.unit.set_label("")
             self.upl.set_label("")
-            self.peak_d.set_label("measuring…" if self.on else "")
+            self.peak_d.set_label("measuring…" if self.connected else "")
             self.peak_u.set_label("")
         self.chart.queue_draw()
 
     def words(self):
         t = self.traffic
         speeds = ""
-        if self.on and t.down:
+        if self.connected and t.down:
             d, du = system.rate(t.down[-1])
             u, uu = system.rate(t.up[-1])
             speeds = f" · ↓ {d} {du} ↑ {u} {uu}"
-        return f"<b>Wi-Fi</b>  {GLib.markup_escape_text(self.sub + speeds)}  · right click: networks"
+        c = self.conns[self.idx] if 0 <= self.idx < len(self.conns) else None
+        what = (c.get("label") or "Network") if c else "Wi-Fi"
+        more = f" · +{len(self.conns) - 1} shows the next" if len(self.conns) > 1 else ""
+        return f"<b>{what}</b>  {GLib.markup_escape_text(self.sub + speeds)}{more}  · right click: networks"
 
     def draw_chart(self, area, cr, w, h):
         t = self.traffic
-        if not (self.on and len(t.down) > 1):
+        if not (self.connected and len(t.down) > 1):
             return
         cr.set_line_join(1)  # round
         n = t.keep

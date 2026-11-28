@@ -28,11 +28,12 @@ log = logging.getLogger("vyom.kendra")
 # keybind: Vyom/quick settings:normal | 0 | Set the focused slider to its minimum
 # keybind: Vyom/quick settings:normal | $ | Set the focused slider to its maximum
 # keybind: Vyom/quick settings:normal | Enter | Toggle the focused setting (on a slider: mute it)
-# keybind: Vyom/quick settings:normal | o | Open the focused tile's details (Wi-Fi in tarang, Bluetooth in setu)
+# keybind: Vyom/quick settings:normal | o | Open the focused tile's details (the network in tarang, Bluetooth in setu)
 # keybind: Vyom/quick settings:normal | m | Toggle mute on the sound output
+# keybind: Vyom/quick settings:normal | n | Show the next network connection in the network square (cable, Wi-Fi, VPN…)
 # keybind: Vyom/quick settings leader:normal | Space l | Lock the screen
 # keybind: Vyom/quick settings leader:normal | Space p | Open the power menu
-# keybind: Vyom/quick settings leader:normal | Space g w | Open the Wi-Fi panel (tarang)
+# keybind: Vyom/quick settings leader:normal | Space g w | Open the network panel (tarang: Wi-Fi, Ethernet, every connection)
 # keybind: Vyom/quick settings leader:normal | Space g b | Open the Bluetooth panel (setu)
 # keybind: Vyom/quick settings leader:normal | Space g h | Open the hotspot (tarang's Hotspot tab)
 # keybind: Vyom/quick settings leader:normal | Space g p | Open the power menu (vishram)
@@ -137,6 +138,8 @@ class Plugin(Base):
     def build_card(self):
         if self.card is None:
             self.card = self._build()
+        if self.wifi is not None:
+            self.wifi.idx = 0       # each opening shows the connection carrying your traffic
         self.refresh_all()
         self.start_watching()
         self.start_sampling()
@@ -277,7 +280,9 @@ class Plugin(Base):
         if bottom.get_first_child() is not None:
             grid.attach(bottom, 0, BOTTOM, 4, 1)
         root.append(grid)
-        self.said = ui.label("", "k-say", xalign=0, ellipsize=Pango.EllipsizeMode.END, use_markup=True)
+        # capped, so a long line (a VPN over a cable, its speeds) never widens the card
+        self.said = ui.label("", "k-say", xalign=0, ellipsize=Pango.EllipsizeMode.END, use_markup=True,
+                             max_width_chars=44)
         root.append(self.said)
         # The keys are in Vyom's footer (a modal card has one).
         return root
@@ -289,6 +294,14 @@ class Plugin(Base):
     def net_history(self):
         """The chart's minute from Vyom's live state (None with an older Vyom)."""
         return live.net(self.traffic.dev, self.traffic.step, self.traffic.step * self.traffic.keep)
+
+    def reload_traffic(self):
+        """The square moved to another connection's device: its minute, at once."""
+        h = self.net_history() if self.net_watch is not None else None
+        if h is not None:
+            self.traffic.load(h)
+        elif self.sampling is not None:
+            self.traffic.sample()
 
     def net_reading(self, _none=None):
         """Vyom read the counters again (every 2 s, its own timer): the
@@ -488,10 +501,11 @@ class Plugin(Base):
 
     def refresh_wifi(self, live_only=False):
         w = self.wifi
-        now = live.wifi(live.get("wifi"))
+        snap = live.get("wifi")
+        now = live.wifi(snap)
         if now is not None:
             on, sub, pct = now
-            w.show_state(on, sub, pct, self.last_dbm if on else None)
+            w.show_state(on, sub, pct, self.last_dbm if on else None, live.connections(snap))
             return
         if live_only:
             return
@@ -503,10 +517,13 @@ class Plugin(Base):
         self.background(get, then=lambda r: w.show_state(*r) if isinstance(r, tuple) else None)
 
     def fetch_dbm(self):
-        """The signal in dBm, only iw knows it: after the first frame."""
-        snap = live.wifi(live.get("wifi"))
-        if snap is not None and snap[0] and self.traffic.dev:
-            self.background(lambda: system.wifi_signal_dbm(self.traffic.dev), then=self._dbm)
+        """The signal in dBm, only iw knows it: after the first frame, and
+        only while Wi-Fi is connected (not for a cable)."""
+        ls = live.get("wifi")
+        snap = live.wifi(ls)
+        dev = (ls or {}).get("device") or self.traffic.dev
+        if snap is not None and snap[0] and snap[2] is not None and dev:
+            self.background(lambda: system.wifi_signal_dbm(dev), then=self._dbm)
 
     def _dbm(self, d):
         if isinstance(d, int) and d != self.last_dbm:
@@ -770,6 +787,12 @@ class Plugin(Base):
                 s.toggle_mute()
                 return
         self.set_status("no sound output to mute", "bad")
+
+    def v_next_net(self, _n, _a):
+        if self.wifi is None or len(self.wifi.conns) < 2:
+            self.say("<b>Network</b>  only one connection")
+            return
+        self.wifi.next_connection()
 
     def v_lock(self, _n, _a):
         if not self.session_action("lock"):

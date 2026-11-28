@@ -49,6 +49,17 @@ def wifi(snap):
     return True, "On · ethernet in use" if snap.get("wired") else "On · not connected", None
 
 
+def connections(snap):
+    """Every connection the machine is on (Vyom 0.12's live state: Wi-Fi,
+    Ethernet, a phone over USB, mobile, Bluetooth, VPN), the one carrying
+    your traffic first, a VPN after what it rides on; your own hotspot left
+    out (its tile says it). None with an older Vyom: the square shows Wi-Fi
+    alone then."""
+    if not snap or not snap.get("running") or snap.get("connections") is None:
+        return None
+    return [dict(c) for c in snap["connections"] if c.get("type") != "hotspot"]
+
+
 def bluetooth(snap):
     """(on, connected devices [{mac, name, icon, battery}]) like
     Bluetooth.status() and bt_devices()."""

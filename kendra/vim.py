@@ -33,8 +33,9 @@ NORMAL = [
     B("0", "ends:min", "Set the focused slider to its minimum"),
     B("$", "ends:max", "Set the focused slider to its maximum"),
     B("<CR>", "enter", "Toggle the focused setting (on a slider: mute it)"),
-    B("o", "details", "Open the focused tile's details (Wi-Fi in tarang, Bluetooth in setu)"),
+    B("o", "details", "Open the focused tile's details (the network in tarang, Bluetooth in setu)"),
     B("m", "mute", "Toggle mute on the sound output"),
+    B("n", "next_net", "Show the next network connection in the network square (cable, Wi-Fi, VPN…)"),
     B("p", "power", "", hidden=True),          # kept: p isn't a vim key
     moved("L", "Space l"),
 ]
@@ -42,7 +43,7 @@ NORMAL = [
 LEADER = [
     B(" l", "lock", "Lock the screen"),
     B(" p", "power", "Open the power menu"),
-    B(" gw", "goto:tarang", "Open the Wi-Fi panel (tarang)"),
+    B(" gw", "goto:tarang", "Open the network panel (tarang: Wi-Fi, Ethernet, every connection)"),
     B(" gb", "goto:setu", "Open the Bluetooth panel (setu)"),
     B(" gh", "goto:tarang:hotspot", "Open the hotspot (tarang's Hotspot tab)"),
     B(" gp", "goto:vishram", "Open the power menu (vishram)"),
