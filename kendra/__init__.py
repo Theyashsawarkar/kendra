@@ -410,6 +410,27 @@ class Plugin(Base):
             self.refresh_bt()
         return True
 
+    def parked(self):
+        """Vyom 0.13 (ADR 17): the card hid but stays open (you left its
+        workspace). The buds' Bluetooth listening and the chart's sampling
+        stop with it; the card stays as it is."""
+        if self.sampling is not None:
+            GLib.source_remove(self.sampling)
+            self.sampling = None
+        if getattr(self, "bt_watch", None) is not None:
+            GLib.source_remove(self.bt_watch)
+            self.bt_watch = None
+        self.listening = False
+        if self.fp is not None:
+            self.background(self.fp.stop)
+
+    def unparked(self):
+        """It shows again as you left it, brought up to date: what the live
+        state knows at once, the rest after the first frame."""
+        self.refresh_all()
+        self.start_watching()
+        self.start_sampling()
+
     def closed(self):
         self.stop_watching()
         if self.net_watch is not None:
@@ -434,6 +455,7 @@ class Plugin(Base):
         internal = DETAILS.get(key)
         if internal and internal[0] in getattr(self.vyom, "plugins", {}):
             name, args = internal
+            self.close()    # the details replace the quick settings (Vyom 0.13 keeps panels side by side)
             GLib.idle_add(lambda: (self.vyom.open(name, list(args)), False)[1])
             return True
         self.set_status("no details for this one", "bad")
@@ -625,6 +647,7 @@ class Plugin(Base):
             self.close()
             system.spawn(cmd)
         else:
+            self.close()
             GLib.idle_add(lambda: (self.vyom.open("vishram", []), False)[1])
         return True
 
