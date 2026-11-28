@@ -267,7 +267,7 @@ class Tall(Gtk.Overlay, Hoverable):
 
     def draw_fill(self, area, cr, w, h):
         """A glass pill holding liquid up to the level: a faint wave behind,
-        a shaded one in front, a thin highlight down the glass."""
+        a shaded one in front."""
         import cairo  # noqa: PLC0415
 
         def pill():
@@ -319,9 +319,6 @@ class Tall(Gtk.Overlay, Hoverable):
                 grad.add_color_stop_rgba(1, red * 0.86, g * 0.86, b * 0.86, a)
                 cr.set_source(grad)
             cr.fill()
-        cr.set_source_rgba(1, 1, 1, 0.18)
-        cr.rectangle(w * 0.16, surf + 6, 2.5, max(0, h - surf - 14))
-        cr.fill()
         cr.restore()
         self.draw_rim(cr, pill)
 

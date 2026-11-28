@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v1.4.1 -- 2026-11-28
+
+- The volume and brightness columns lose the thin white highlight line down their left side: the liquid and the glass are enough.
+
 ## v1.4.0 -- 2026-11-28
 
 - **The network square shows any connection, not only Wi-Fi** (Vyom 0.12): on a cable it shows the cable (its icon, its name, an **Ethernet** badge, its speed and the last minute's chart from that device) instead of "Ethernet in use" and an empty chart; the same for a phone over USB, mobile broadband, Bluetooth and a VPN (over what it rides on). The connection carrying your traffic shows; with more than one, **+1** (top right) or the new key `n` shows the next. Wi-Fi keeps its signal bars; the circle still turns Wi-Fi on and off. With an older Vyom the square is as before.
