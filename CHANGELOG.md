@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v1.6.0 -- 2026-11-28
 
 - **A tile's `file:` state follows changes while the panel is open**: kendra watches the folder of each `file:` a tile names (one monitor per folder, told by the kernel, no polling) and redraws the tile when the file is written or replaced. Before, it read the file only on opening, so a change made elsewhere (Jyoti set from the phone, a script) showed only the next time.
 
