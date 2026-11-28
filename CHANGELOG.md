@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v1.5.0 -- 2026-11-28
 
 - **Open beside other panels, kept per workspace** (Vyom 0.13, ADR 17): quick settings now open beside the launcher or any centred panel, and stay on the workspace you opened them on. When you leave that workspace the buds' Bluetooth listening and the chart's sampling stop; when you come back the card is as you left it, brought up to date (`parked()` / `unparked()`).
 - Opening a tile's details (Wi-Fi, Bluetooth, battery…) or the power menu closes the quick settings first, as before: with Vyom 0.13 they would otherwise stay open beside the panel they opened.
